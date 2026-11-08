@@ -5,8 +5,8 @@ import { DemoForm } from "@/components/marketing/demo-form";
 import { DemoStart } from "@/components/marketing/demo-start";
 import { MOCKS } from "@/components/marketing/product-mocks";
 import { Reveal } from "@/components/marketing/reveal";
-import { SectorCarousel } from "@/components/marketing/sector-carousel";
 import { SectorIllustration } from "@/components/marketing/sector-illustration";
+import { SectorTabs } from "@/components/marketing/sector-tabs";
 import {
   BODY,
   BTN_PRIMARY,
@@ -258,7 +258,7 @@ export default function AnaSayfa() {
           </Reveal>
 
           <Reveal delay={80}>
-            <SectorCarousel slides={listSectorSlides()} />
+            <SectorTabs slides={listSectorSlides()} />
           </Reveal>
 
           <p className="max-w-2xl pt-8 text-[15px] leading-[1.7] text-ink-2">
