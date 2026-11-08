@@ -405,8 +405,18 @@ export function OnboardingWizard({
             Geri
           </Button>
 
+          {/*
+            İki butona AYRI `key`: aksi halde React ikisini aynı <button>
+            düğümüne indirger ve "Devam"a tıklayınca adım son adıma geçtiği an
+            o düğüm `type="button"`'dan `type="submit"`'e DÖNÜŞÜR. Tarayıcı
+            tıklamanın varsayılan eylemini o anki (artık submit olan) düğüme
+            uygular ve form kullanıcı çalışma saatlerini göremeden gönderilir.
+            Ayrı key, Devam düğümünü söküp submit düğümünü sıfırdan basar;
+            ilk tıklama submit'e dönüşmez.
+          */}
           {!lastStep ? (
             <Button
+              key="ileri"
               variant="primary"
               onClick={() => setStep((s) => s + 1)}
               disabled={!canContinue}
@@ -414,7 +424,7 @@ export function OnboardingWizard({
               Devam
             </Button>
           ) : (
-            <Button type="submit" variant="primary" disabled={pending}>
+            <Button key="gonder" type="submit" variant="primary" disabled={pending}>
               {pending
                 ? demo
                   ? "Kurum kuruluyor, örnek gün yazılıyor…"
