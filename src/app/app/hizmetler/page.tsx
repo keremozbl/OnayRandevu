@@ -97,61 +97,71 @@ function ServiceRow({
   service: CatalogService;
   highlighted: boolean;
 }) {
+  // Mobilde ad kendi satırında (tam genişlik), süre/fiyat/rozetler ikinci
+  // satırda. Masaüstünde `sm:contents` ile meta sarmalayıcısı kaybolur ve
+  // çocukları li'nin tek satır ızgarasına döner — eski sütun düzeni korunur.
+  // Sabit `w-48`/`w-28` sütunlar dar ekranda adı birkaç piksele eziyordu.
   return (
     <li
-      className={`flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[13px] ${
+      className={`flex flex-col gap-1.5 px-3 py-2.5 text-[13px] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1 sm:py-2 ${
         highlighted ? "bg-accent-soft" : ""
       }`}
     >
-      {service.color ? (
-        <span
-          aria-hidden="true"
-          className="size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: service.color }}
-        />
-      ) : (
-        <span aria-hidden="true" className="size-2 shrink-0 rounded-full border border-border" />
-      )}
+      <div className="flex min-w-0 items-center gap-2 sm:flex-1">
+        {service.color ? (
+          <span
+            aria-hidden="true"
+            className="size-2 shrink-0 rounded-full"
+            style={{ backgroundColor: service.color }}
+          />
+        ) : (
+          <span aria-hidden="true" className="size-2 shrink-0 rounded-full border border-border" />
+        )}
 
-      <Link
-        href={`/app/hizmetler/${service.id}`}
-        className="min-w-0 max-w-[18rem] flex-1 truncate font-medium text-ink no-underline hover:underline"
-      >
-        {service.name}
-      </Link>
+        <Link
+          href={`/app/hizmetler/${service.id}`}
+          className="min-w-0 flex-1 truncate font-medium text-ink no-underline hover:underline sm:max-w-[18rem]"
+        >
+          {service.name}
+        </Link>
+      </div>
 
-      <span className="w-48 shrink-0 truncate font-mono text-[12px] text-ink-2">
-        {describeDuration(service)}
-      </span>
-
-      <span className="w-28 shrink-0 truncate text-right font-mono text-[12px] text-ink-2">
-        {service.price === null ? "" : formatMoney(service.price)}
-      </span>
-
-      {service.resourceIds.length > 0 && (
-        <span className="shrink-0 text-[12px] text-ink-3" data-numeric>
-          {service.resourceIds.length} kaynak
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-4 sm:contents">
+        <span className="font-mono text-[12px] text-ink-2 sm:w-48 sm:shrink-0 sm:truncate">
+          {describeDuration(service)}
         </span>
-      )}
 
-      {!service.isOnlineBookable && service.isActive && (
-        <span className="shrink-0 rounded-sm bg-surface-2 px-1.5 py-0.5 text-[11px] text-ink-2">
-          online kapalı
-        </span>
-      )}
-      {!service.isActive && (
-        <span className="shrink-0 rounded-sm bg-st-cancelled-soft px-1.5 py-0.5 text-[11px] text-ink">
-          pasif
-        </span>
-      )}
+        {service.price !== null && (
+          <span className="font-mono text-[12px] text-ink-2 sm:w-28 sm:shrink-0 sm:truncate sm:text-right">
+            {formatMoney(service.price)}
+          </span>
+        )}
 
-      <form action={toggleServiceAction} className="ml-auto shrink-0">
-        <input type="hidden" name="id" value={service.id} />
-        <input type="hidden" name="active" value={service.isActive ? "0" : "1"} />
-        <Button type="submit" size="sm" variant={service.isActive ? "secondary" : "primary"}>
-          {service.isActive ? "Pasife Al" : "Aktife Al"}
-        </Button>
-      </form>
+        {service.resourceIds.length > 0 && (
+          <span className="shrink-0 text-[12px] text-ink-3" data-numeric>
+            {service.resourceIds.length} kaynak
+          </span>
+        )}
+
+        {!service.isOnlineBookable && service.isActive && (
+          <span className="shrink-0 rounded-sm bg-surface-2 px-1.5 py-0.5 text-[11px] text-ink-2">
+            online kapalı
+          </span>
+        )}
+        {!service.isActive && (
+          <span className="shrink-0 rounded-sm bg-st-cancelled-soft px-1.5 py-0.5 text-[11px] text-ink">
+            pasif
+          </span>
+        )}
+
+        <form action={toggleServiceAction} className="ml-auto shrink-0">
+          <input type="hidden" name="id" value={service.id} />
+          <input type="hidden" name="active" value={service.isActive ? "0" : "1"} />
+          <Button type="submit" size="sm" variant={service.isActive ? "secondary" : "primary"}>
+            {service.isActive ? "Pasife Al" : "Aktife Al"}
+          </Button>
+        </form>
+      </div>
     </li>
   );
 }

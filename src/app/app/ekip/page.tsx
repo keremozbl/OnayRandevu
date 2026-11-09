@@ -115,56 +115,64 @@ function ResourceRow({
   resource: TeamResource;
   highlighted: boolean;
 }) {
+  // Mobilde ad kendi satırında (tam genişlik), tür/çalışma saatleri/rozetler
+  // ikinci satırda. Masaüstünde `sm:contents` ile meta sarmalayıcısı kaybolur
+  // ve eski tek satır düzeni döner. Dar ekranda ad ile saat birbirini
+  // birkaç piksele eziyordu ("Pzt–Cum 09:00–13:00, 14:00–…" kesiliyordu).
   return (
     <li
-      className={`flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[13px] ${
+      className={`flex flex-col gap-1.5 px-3 py-2.5 text-[13px] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1 sm:py-2 ${
         highlighted ? "bg-accent-soft" : ""
       }`}
     >
-      {resource.color ? (
-        <span
-          aria-hidden="true"
-          className="size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: resource.color }}
-        />
-      ) : (
-        <span aria-hidden="true" className="size-2 shrink-0 rounded-full border border-border" />
-      )}
+      <div className="flex min-w-0 items-center gap-2 sm:flex-1">
+        {resource.color ? (
+          <span
+            aria-hidden="true"
+            className="size-2 shrink-0 rounded-full"
+            style={{ backgroundColor: resource.color }}
+          />
+        ) : (
+          <span aria-hidden="true" className="size-2 shrink-0 rounded-full border border-border" />
+        )}
 
-      <Link
-        href={`/app/ekip/kaynak/${resource.id}`}
-        className="min-w-0 max-w-[16rem] flex-1 truncate font-medium text-ink no-underline hover:underline"
-      >
-        {resource.title ? `${resource.title} ` : ""}
-        {resource.name}
-      </Link>
+        <Link
+          href={`/app/ekip/kaynak/${resource.id}`}
+          className="min-w-0 flex-1 truncate font-medium text-ink no-underline hover:underline sm:max-w-[16rem]"
+        >
+          {resource.title ? `${resource.title} ` : ""}
+          {resource.name}
+        </Link>
+      </div>
 
-      <span className="shrink-0 font-mono text-[10px] uppercase text-ink-3">
-        {RESOURCE_KIND_LABELS[resource.kind]}
-      </span>
-
-      <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink-2">
-        {summarizeWeek(resource.hours)}
-      </span>
-
-      {!resource.isBookable && resource.isActive && (
-        <span className="shrink-0 rounded-sm bg-surface-2 px-1.5 py-0.5 text-[11px] text-ink-2">
-          randevuya kapalı
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-4 sm:contents">
+        <span className="shrink-0 font-mono text-[10px] uppercase text-ink-3">
+          {RESOURCE_KIND_LABELS[resource.kind]}
         </span>
-      )}
-      {!resource.isActive && (
-        <span className="shrink-0 rounded-sm bg-st-cancelled-soft px-1.5 py-0.5 text-[11px] text-ink">
-          pasif
-        </span>
-      )}
 
-      <form action={toggleResourceAction} className="shrink-0">
-        <input type="hidden" name="id" value={resource.id} />
-        <input type="hidden" name="active" value={resource.isActive ? "0" : "1"} />
-        <Button type="submit" size="sm" variant={resource.isActive ? "secondary" : "primary"}>
-          {resource.isActive ? "Pasife Al" : "Aktife Al"}
-        </Button>
-      </form>
+        <span className="min-w-0 font-mono text-[12px] text-ink-2 sm:flex-1 sm:truncate">
+          {summarizeWeek(resource.hours)}
+        </span>
+
+        {!resource.isBookable && resource.isActive && (
+          <span className="shrink-0 rounded-sm bg-surface-2 px-1.5 py-0.5 text-[11px] text-ink-2">
+            randevuya kapalı
+          </span>
+        )}
+        {!resource.isActive && (
+          <span className="shrink-0 rounded-sm bg-st-cancelled-soft px-1.5 py-0.5 text-[11px] text-ink">
+            pasif
+          </span>
+        )}
+
+        <form action={toggleResourceAction} className="ml-auto shrink-0">
+          <input type="hidden" name="id" value={resource.id} />
+          <input type="hidden" name="active" value={resource.isActive ? "0" : "1"} />
+          <Button type="submit" size="sm" variant={resource.isActive ? "secondary" : "primary"}>
+            {resource.isActive ? "Pasife Al" : "Aktife Al"}
+          </Button>
+        </form>
+      </div>
     </li>
   );
 }
