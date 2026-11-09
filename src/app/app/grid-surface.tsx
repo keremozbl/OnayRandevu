@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -57,6 +58,22 @@ const KEY_COMMIT_DELAY_MS = 700;
 
 /** Yapışkan sütun başlığının yüksekliği — kendiliğinden kaymanın üst sınırı. */
 const HEADER_H = 40;
+
+/**
+ * Dikey ölçek: piksel/dakika. Tüm konumlar `--ppm` CSS değişkeniyle çizilir
+ * (bkz. day-grid.tsx); burada o değişkenin değeri hesaplanır.
+ *
+ * - "Rahat": 30 dakika = 44px, eski sabit ölçek — bloklar ferah, gün kaydırılır.
+ * - "Sığdır": çalışma günü ekrana otursun diye ölçek küçülür, dikey kaydırma
+ *   biter. Alt sınır bloğun okunur kalması, üst sınır kısa günde slotların
+ *   devasa olmaması için.
+ */
+const COMFORT_PPM = 44 / 30;
+const FIT_MIN_PPM = 0.7;
+const FIT_MAX_PPM = COMFORT_PPM * 1.5;
+
+const DENSITY_KEY = "takvim-yogunluk";
+type Density = "fit" | "comfortable";
 
 /** Bir bloğun geçici konumu. Sunucu onaylayınca blok bunu kendisi siler. */
 export type Draft = {
@@ -129,7 +146,6 @@ export function GridSurface({
   label,
   timeZone,
   dayStartsAtMs,
-  pxPerMinute,
   gridFromMinutes,
   gridToMinutes,
   stepMinutes,
@@ -139,7 +155,6 @@ export function GridSurface({
   label: string;
   timeZone: string;
   dayStartsAtMs: number;
-  pxPerMinute: number;
   gridFromMinutes: number;
   gridToMinutes: number;
   /** Sürüklemenin oturduğu adım; `booking_rules.slot_step_minutes` */
@@ -161,6 +176,58 @@ export function GridSurface({
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState("");
   const [, startTransition] = useTransition();
+
+  const totalMinutes = gridToMinutes - gridFromMinutes;
+
+  // Dikey ölçek. `ppm` bloklara (context) ve `--ppm`'e aynı anda gider; tek
+  // kaynak olduğu için sunucu arka planı ile istemci blokları hep aynı ölçekte.
+  // Sürükleme matematiği anlık değeri `ppmRef`'ten okur (closure eskimesin).
+  const [density, setDensity] = useState<Density>("fit");
+  const [ppm, setPpm] = useState(COMFORT_PPM);
+  const ppmRef = useRef(COMFORT_PPM);
+
+  const applyScale = useCallback(() => {
+    const scroller = scrollerRef.current;
+    let next = COMFORT_PPM;
+    if (density === "fit" && scroller && totalMinutes > 0) {
+      // max-height CSS'te sabit (calc(100dvh - …)); içerik yüksekliğinden
+      // bağımsız okunur, yoksa ölçek→yükseklik→ölçek döngüsü olurdu.
+      const maxH = parseFloat(getComputedStyle(scroller).maxHeight);
+      // Yapışkan başlık (HEADER_H) + ızgara altı boşluğu (pb-4) + kenarlık payı:
+      // bu kadarı düşülmezse içerik birkaç piksel taşıp kaydırma bırakır.
+      const avail = (Number.isFinite(maxH) ? maxH : window.innerHeight * 0.75) - HEADER_H - 20;
+      next = Math.min(FIT_MAX_PPM, Math.max(FIT_MIN_PPM, avail / totalMinutes));
+    }
+    ppmRef.current = next;
+    setPpm(next);
+  }, [density, totalMinutes]);
+
+  // Kaydedilmiş tercihi oku. İlk render sunucuyla aynı olsun diye ("fit")
+  // burada, gövdede değil — yoksa hydration uyuşmazlığı olurdu.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DENSITY_KEY);
+      if (saved === "comfortable" || saved === "fit") setDensity(saved);
+    } catch {
+      // depolama kapalı; "fit" varsayılanıyla devam
+    }
+  }, []);
+
+  useEffect(() => {
+    applyScale();
+    if (density !== "fit") return;
+    window.addEventListener("resize", applyScale);
+    return () => window.removeEventListener("resize", applyScale);
+  }, [applyScale, density]);
+
+  const chooseDensity = useCallback((next: Density) => {
+    setDensity(next);
+    try {
+      localStorage.setItem(DENSITY_KEY, next);
+    } catch {
+      // depolama kapalı; tercih bu sekmede yaşar
+    }
+  }, []);
 
   const bounds = useMemo<GridBounds>(
     () => ({ fromMinutes: gridFromMinutes, toMinutes: gridToMinutes, stepMinutes }),
@@ -295,7 +362,7 @@ export function GridSurface({
 
     const view = scroller.getBoundingClientRect();
     const contentY = drag.pointerY - view.top + scroller.scrollTop;
-    const deltaMinutes = pixelsToMinutes(contentY - drag.originY, pxPerMinute);
+    const deltaMinutes = pixelsToMinutes(contentY - drag.originY, ppmRef.current);
     const { info } = drag;
 
     if (drag.kind === "move") {
@@ -339,7 +406,7 @@ export function GridSurface({
     }
 
     publish(info.id, drag.draft);
-  }, [bounds, publish, pxPerMinute]);
+  }, [bounds, publish]);
 
   /** Kenara yaklaşınca ızgarayı kaydırır; hız kenara olan uzaklıkla artar. */
   const startAutoScroll = useCallback(() => {
@@ -587,7 +654,7 @@ export function GridSurface({
   const api = useMemo<GridApi>(
     () => ({
       bounds,
-      pxPerMinute,
+      pxPerMinute: ppm,
       dayStartsAtMs,
       formatTime,
       subscribe,
@@ -599,7 +666,7 @@ export function GridSurface({
     }),
     [
       bounds,
-      pxPerMinute,
+      ppm,
       dayStartsAtMs,
       formatTime,
       subscribe,
@@ -637,15 +704,51 @@ export function GridSurface({
           </Alert>
         )}
 
+        <div className="flex items-center justify-end gap-2">
+          <span className="font-mono text-[11px] uppercase tracking-wide text-ink-3">
+            Yoğunluk
+          </span>
+          {/* Sığdır: çalışma günü ekrana otursun, dikey kaydırma bitsin.
+              Rahat: 30 dk = 44px, bloklar ferah; uzun günde gün kaydırılır. */}
+          <div
+            role="group"
+            aria-label="Izgara yoğunluğu"
+            className="inline-flex rounded border border-border bg-surface p-0.5"
+          >
+            {(
+              [
+                ["fit", "Sığdır"],
+                ["comfortable", "Rahat"],
+              ] as const
+            ).map(([value, text]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={density === value}
+                onClick={() => chooseDensity(value)}
+                className={`inline-flex h-6 items-center rounded-sm px-2 text-[12px] transition-colors duration-150 ${
+                  density === value
+                    ? "bg-surface-2 font-medium text-ink"
+                    : "text-ink-3 hover:text-ink"
+                }`}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div
           ref={scrollerRef}
           data-arrow-scroll
           tabIndex={0}
           role="region"
           aria-label={`${label} takvimi`}
-          // Masaüstünde menü artık solda: başlığın altındaki sekme satırı
-          // gitti, ızgara o iki satırı geri alıyor.
-          className="max-h-[calc(100dvh-15rem)] min-h-80 overflow-auto overscroll-contain rounded border border-border bg-surface lg:max-h-[calc(100dvh-13rem)]"
+          // Dikey ölçek `--ppm`'de; "sığdır"/"rahat" bunu değiştirir ve hem
+          // sunucu arka planı hem istemci blokları aynı değerden ölçeklenir.
+          // Bütçeden ayrılan ~2rem üstteki yoğunluk satırına.
+          style={{ "--ppm": `${ppm}px` } as CSSProperties}
+          className="max-h-[calc(100dvh-17rem)] min-h-80 overflow-auto overscroll-contain rounded border border-border bg-surface lg:max-h-[calc(100dvh-15rem)]"
         >
           {children}
         </div>

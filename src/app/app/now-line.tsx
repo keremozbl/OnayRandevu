@@ -13,13 +13,11 @@ export function NowLine({
   dayStartsAt,
   gridFromMinutes,
   gridToMinutes,
-  pxPerMinute,
   showMarker = false,
 }: {
   dayStartsAt: Date;
   gridFromMinutes: number;
   gridToMinutes: number;
-  pxPerMinute: number;
   /** Yuvarlak imleç yalnız ilk sütunda çizilir; her sütunda tekrarlamasın. */
   showMarker?: boolean;
 }) {
@@ -38,7 +36,7 @@ export function NowLine({
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-x-0 z-10 border-t border-accent"
-      style={{ top: (minutes - gridFromMinutes) * pxPerMinute }}
+      style={{ top: `calc(var(--ppm) * ${Math.round((minutes - gridFromMinutes) * 100) / 100})` }}
     >
       {showMarker && (
         <span className="absolute left-0 top-0 size-1.5 -translate-y-1/2 rounded-full bg-accent" />

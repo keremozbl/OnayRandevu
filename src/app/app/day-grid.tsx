@@ -11,26 +11,34 @@ import { NowLine } from "./now-line";
 /**
  * Gün ızgarası: solda zaman ekseni, sağda kaynak sütunları.
  *
- * Yükseklik `--slot-h` token'ıyla aynı ölçekte: 30 dakika = 44px. Konumlar
- * sunucuda hesaplanmış `Date` değerlerinden çıkar, tarayıcının saat dilimi
- * hiçbir şeyi kaydırmaz.
+ * Dikey ölçek tek bir CSS değişkeninde: `--ppm` (piksel/dakika, bir uzunluk).
+ * Her konum "dakika sayısı × --ppm" olarak `calc` ile yazılır; ölçeği
+ * `GridSurface` ayarlar — "sığdır" modunda günü ekrana oturtacak değer, "rahat"
+ * modunda 30 dakika = 44px. Böylece ölçek değiştiğinde buradaki hiçbir konum
+ * elle yeniden hesaplanmaz; `--ppm` değişince hepsi birlikte ölçeklenir.
  *
- * Randevu blokları istemci bileşeni (`appointment-block.tsx`): sürüklenirken
- * ve sunucu onayı beklenirken geçici bir konumda durabilmeleri gerekiyor.
- * Sütunlar, boş slotlar ve zaman ekseni sunucuda kalır.
+ * Konumlar sunucuda hesaplanmış `Date` değerlerinden çıkar (dakika olarak),
+ * tarayıcının saat dilimi hiçbir şeyi kaydırmaz. Randevu blokları istemci
+ * bileşeni (`appointment-block.tsx`) ve aynı `--ppm` ölçeğini kullanır:
+ * sürüklenirken ve sunucu onayı beklenirken geçici konumda durabilmeleri
+ * gerekiyor. Sütunlar, boş slotlar ve zaman ekseni sunucuda kalır.
  */
 const SLOT_MINUTES = 30;
-const SLOT_HEIGHT = 44; // globals.css → --slot-h
-const PX_PER_MIN = SLOT_HEIGHT / SLOT_MINUTES;
 
 /** style özniteliğine 442.99999999999994 yazılmasın. */
 const px = (value: number) => Math.round(value * 100) / 100;
 
+/** Dikey konum: dakika sayısı × --ppm. Ölçek runtime'da --ppm'den gelir. */
+const v = (minutes: number) => `calc(var(--ppm) * ${px(minutes)})`;
+
+/** Bir slot (30 dk) yüksekliği, boş slot kutuları için — 1px çizgi payı düşülür. */
+const SLOT_HEIGHT = `calc(var(--ppm) * ${SLOT_MINUTES} - 1px)`;
+
 /** Saat ve yarım saat çizgileri: DOM yerine arka plan katmanı. */
 const gridLines = {
   backgroundImage: [
-    `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${60 * PX_PER_MIN}px)`,
-    `repeating-linear-gradient(to bottom, var(--surface-2) 0 1px, transparent 1px ${SLOT_HEIGHT}px)`,
+    `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px calc(var(--ppm) * 60))`,
+    `repeating-linear-gradient(to bottom, var(--surface-2) 0 1px, transparent 1px calc(var(--ppm) * ${SLOT_MINUTES}))`,
   ].join(", "),
 };
 
@@ -55,7 +63,7 @@ export function DayGrid({
 }) {
   const { timeZone, dayStartsAt, gridFromMinutes, gridToMinutes, resources } = schedule;
   const totalMinutes = gridToMinutes - gridFromMinutes;
-  const bodyHeight = totalMinutes * PX_PER_MIN;
+  const bodyHeight = v(totalMinutes);
 
   const time = new Intl.DateTimeFormat("tr-TR", {
     timeZone,
@@ -67,13 +75,15 @@ export function DayGrid({
   const minutesFromDayStart = (instant: Date) =>
     (instant.getTime() - dayStartsAt.getTime()) / 60_000;
 
-  const offsetOf = (instant: Date) => px((minutesFromDayStart(instant) - gridFromMinutes) * PX_PER_MIN);
+  /** Izgaranın üstünden itibaren dakika; piksele dönüşüm `--ppm` ile CSS'te. */
+  const offsetMinutes = (instant: Date) => minutesFromDayStart(instant) - gridFromMinutes;
 
   /** Izgara dışına taşan aralıklar kırpılır; taşan blok sütunu bozar. */
   const bandOf = (interval: Interval) => {
-    const top = Math.max(0, offsetOf(interval.start));
-    const bottom = Math.min(bodyHeight, offsetOf(interval.end));
-    return { top, height: px(Math.max(bottom - top, 0)) };
+    const topMin = Math.max(0, offsetMinutes(interval.start));
+    const bottomMin = Math.min(totalMinutes, offsetMinutes(interval.end));
+    const heightMin = Math.max(bottomMin - topMin, 0);
+    return { top: v(topMin), height: v(heightMin), heightMin };
   };
 
   const hours: number[] = [];
@@ -84,7 +94,6 @@ export function DayGrid({
       label={label}
       timeZone={timeZone}
       dayStartsAtMs={dayStartsAt.getTime()}
-      pxPerMinute={PX_PER_MIN}
       gridFromMinutes={gridFromMinutes}
       gridToMinutes={gridToMinutes}
       stepMinutes={schedule.rules.slot_step_minutes}
@@ -98,7 +107,7 @@ export function DayGrid({
               <span
                 key={minute}
                 className="absolute right-2 font-mono text-[11px] leading-none text-ink-3"
-                style={{ top: px((minute - gridFromMinutes) * PX_PER_MIN) + 3 }}
+                style={{ top: `calc(${v(minute - gridFromMinutes)} + 3px)` }}
               >
                 {time.format(new Date(dayStartsAt.getTime() + minute * 60_000))}
               </span>
@@ -112,7 +121,7 @@ export function DayGrid({
             day={day}
             bodyHeight={bodyHeight}
             bandOf={bandOf}
-            offsetOf={offsetOf}
+            offsetMinutes={offsetMinutes}
             time={time}
             date={schedule.date}
             branchId={schedule.branch?.id ?? null}
@@ -123,7 +132,6 @@ export function DayGrid({
                   dayStartsAt={dayStartsAt}
                   gridFromMinutes={gridFromMinutes}
                   gridToMinutes={gridToMinutes}
-                  pxPerMinute={PX_PER_MIN}
                   showMarker={index === 0}
                 />
               ) : null
@@ -139,7 +147,7 @@ function ResourceColumn({
   day,
   bodyHeight,
   bandOf,
-  offsetOf,
+  offsetMinutes,
   time,
   date,
   branchId,
@@ -147,9 +155,9 @@ function ResourceColumn({
   now,
 }: {
   day: ResourceDay;
-  bodyHeight: number;
-  bandOf: (interval: Interval) => { top: number; height: number };
-  offsetOf: (instant: Date) => number;
+  bodyHeight: string;
+  bandOf: (interval: Interval) => { top: string; height: string; heightMin: number };
+  offsetMinutes: (instant: Date) => number;
   time: Intl.DateTimeFormat;
   date: string;
   branchId: string | null;
@@ -210,7 +218,7 @@ function ResourceColumn({
 
         {timeOff.map((leave) => {
           const band = bandOf(leave);
-          if (band.height <= 0) return null;
+          if (band.heightMin <= 0) return null;
           return (
             <div
               key={leave.start.toISOString()}
@@ -240,7 +248,7 @@ function ResourceColumn({
             href={newAppointmentHref(startsAt)}
             aria-label={`${time.format(startsAt)} · ${resource.name} · yeni randevu`}
             className="group absolute inset-x-0.5 rounded-sm no-underline transition-colors duration-150 hover:bg-accent-soft"
-            style={{ top: offsetOf(startsAt), height: SLOT_HEIGHT - 1 }}
+            style={{ top: v(offsetMinutes(startsAt)), height: SLOT_HEIGHT }}
           >
             <span
               aria-hidden="true"
