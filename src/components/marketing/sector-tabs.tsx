@@ -87,7 +87,10 @@ export function SectorTabs({ slides }: { slides: SectorSlide[] }) {
         aria-label="Sektörler"
         aria-orientation="horizontal"
         onKeyDown={onKeyDown}
-        className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        // Mobilde 2 sütunlu ızgara: altı sektör de tek bakışta görünür.
+        // Eskiden tek satır yatay kayan bir şeritti — gizli scrollbar'la çoğu
+        // sektör ekran dışında kalıyordu. ≥sm'de yine kayan tek satır şerit.
+        className="grid grid-cols-2 gap-1.5 sm:-mx-1 sm:flex sm:overflow-x-auto sm:px-1 sm:pb-1 sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden"
       >
         {slides.map((slide, position) => {
           const active = position === index;
@@ -101,7 +104,7 @@ export function SectorTabs({ slides }: { slides: SectorSlide[] }) {
               aria-controls="sektor-panel"
               tabIndex={active ? 0 : -1}
               onClick={() => select(position)}
-              className={`flex shrink-0 flex-col gap-0.5 rounded-lg border px-4 py-2.5 text-left transition-[background-color,border-color,color] duration-150 ${
+              className={`flex flex-col gap-0.5 rounded-lg border px-4 py-2.5 text-left transition-[background-color,border-color,color] duration-150 sm:shrink-0 ${
                 active
                   ? "border-brand bg-brand text-brand-ink"
                   : "border-border bg-surface text-ink-2 [@media(hover:hover)]:hover:border-border-strong [@media(hover:hover)]:hover:text-ink"
@@ -114,7 +117,7 @@ export function SectorTabs({ slides }: { slides: SectorSlide[] }) {
               >
                 {slide.familyLabel}
               </span>
-              <span className="whitespace-nowrap text-[14px] font-medium">{slide.label}</span>
+              <span className="text-[14px] font-medium sm:whitespace-nowrap">{slide.label}</span>
             </button>
           );
         })}

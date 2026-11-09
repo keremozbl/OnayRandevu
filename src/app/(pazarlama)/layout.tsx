@@ -37,10 +37,15 @@ export default function PazarlamaLayout({ children }: { children: React.ReactNod
           <SiteNav variant="masaustu" />
 
           <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
+            {/* Tema anahtarı ve Giriş yalnızca ≥sm'de başlıkta: dar telefonda
+                üçlü tema segmenti + Giriş + CTA tek satıra sığmayıp sayfayı
+                yatay kaydırıyor ve CTA kırpılıyordu. Mobilde tema footer'da,
+                Giriş footer menüsünde. (max-sm:hidden kullanılıyor çünkü
+                BTN_SMALL'un `inline-flex`'i düz `hidden`'ı eziyor.) */}
+            <ThemeToggle className="max-sm:hidden" />
             <Link
               href="/giris"
-              className={`${BTN_SMALL} hidden text-ink-2 hover:bg-surface-2 hover:text-ink sm:inline-flex`}
+              className={`${BTN_SMALL} text-ink-2 hover:bg-surface-2 hover:text-ink max-sm:hidden`}
             >
               Giriş
             </Link>
@@ -100,9 +105,14 @@ export default function PazarlamaLayout({ children }: { children: React.ReactNod
             </nav>
           </div>
 
-          <p className="border-t border-border pt-6 text-[13px] text-ink-3">
-            Bu site pazarlama ya da izleme çerezi kullanmaz.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
+            <p className="text-[13px] text-ink-3">
+              Bu site pazarlama ya da izleme çerezi kullanmaz.
+            </p>
+            {/* Tema anahtarı mobilde başlıktan footer'a indi; ≥sm'de başlıkta
+                olduğu için burada yalnızca mobilde gösteriliyor. */}
+            <ThemeToggle className="sm:hidden" />
+          </div>
         </Container>
       </footer>
     </div>
