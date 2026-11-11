@@ -246,8 +246,8 @@ gerçek olmayan üç şey var ve üçü de kod değil, ticari karar.
 
 | Ne | Şu an | Nerede |
 |---|---|---|
-| Alan adı | yok; `NEXT_PUBLIC_SITE_URL` boşsa `localhost` | `src/lib/marketing/site-url.ts` — sitemap, robots, paylaşım kartı **ve kurumun randevu bağlantısı** buradan besleniyor (bkz. B16) |
-| Tüzel kişi ve iletişim | `iletisim@onayrandevu.com` **uydurma**, adres ve telefon `null` | `SITE_CONTACT`, `src/lib/legal/site-texts.ts` |
+| Alan adı | ✅ ÇÖZÜLDÜ (11 Kas 2026): `onayrandevu.com` alındı, canlı, prod `NEXT_PUBLIC_SITE_URL` ayarlı | `src/lib/marketing/site-url.ts` — sitemap, robots, paylaşım kartı **ve kurumun randevu bağlantısı** buradan besleniyor (bkz. B16) |
+| Tüzel kişi ve iletişim | `iletisim@onayrandevu.com` posta kutusu artık **gerçek** (alındı 11 Kas 2026) ama **gönderim altyapısı YOK** (custom SMTP/ESP bağlı değil; `providers.ts` hepsi log, Supabase auth varsayılan gönderici). Adres ve telefon hâlâ `null` | `SITE_CONTACT`, `src/lib/legal/site-texts.ts` |
 | Fiyatlar | **temsilî** — 890 / 1.890 / görüşelim | `PLANS` ve `PRICING_IS_DRAFT`, `src/lib/marketing/content.ts` |
 
 `PRICING_IS_DRAFT` true olduğu sürece fiyat sayfası "fiyatlar temsilidir"
