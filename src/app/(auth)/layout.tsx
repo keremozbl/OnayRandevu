@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BrandName } from "@/components/brand-name";
 import { LogoMark } from "@/components/logo-mark";
 
 export default function AuthLayout({
@@ -17,7 +18,7 @@ export default function AuthLayout({
             aria-label="OnayRandevu ana sayfa"
           >
             <LogoMark className="size-5" />
-            OnayRandevu
+            <BrandName />
           </Link>
         </div>
       </header>

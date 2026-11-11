@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BrandName } from "@/components/brand-name";
 import { LogoMark } from "@/components/logo-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { requireTenant } from "@/lib/auth/session";
@@ -49,7 +50,7 @@ export default async function AppLayout({
             aria-label="OnayRandevu ana sayfa"
           >
             <LogoMark className="size-5" />
-            <span className="hidden sm:inline">OnayRandevu</span>
+            <BrandName className="hidden sm:inline" />
           </Link>
 
           <span className="text-ink-3" aria-hidden="true">

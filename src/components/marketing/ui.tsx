@@ -6,17 +6,15 @@
  * (bkz. globals.css `--brand`).
  */
 
+import { BrandName } from "@/components/brand-name";
 import { LogoMark } from "@/components/logo-mark";
-import { PRODUCT } from "@/lib/marketing/content";
 
-/** Teyit = onay → tik, Randevu → R. İşaret `LogoMark`'ta; burada ad eşlik eder. */
+/** İşaret (`LogoMark`) + iki tonlu ad (`BrandName`): logodaki kilidin aynısı. */
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <LogoMark className="size-6" />
-      <span className="text-[16px] font-semibold tracking-[-0.01em] text-ink" translate="no">
-        {PRODUCT.name}
-      </span>
+      <BrandName className="text-[16px] tracking-[-0.01em] text-ink" />
     </span>
   );
 }
