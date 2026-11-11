@@ -1,4 +1,4 @@
-# TeyitRandevu — Ürün, Teknik ve Hukuki Plan
+# OnayRandevu — Ürün, Teknik ve Hukuki Plan
 
 Çok kiracılı (multi-tenant) randevu ve müşteri takip SaaS'ı. İşletme kayıt olur, sektörünü seçer,
 hazır bir şablonla kendi altyapısını (şube, personel, hizmet, çalışma saatleri) kurar; hem kendi
@@ -40,9 +40,9 @@ tanımlanmaz — Next.js'te o ön ek değişkeni tarayıcıya gönderir.
 ## 2. Mimari
 
 ```
-teyitrandevu.com/              → pazarlama sitesi, kayıt          (Vercel)
-teyitrandevu.com/r/[slug]      → public randevu sayfası           (Vercel, ISR)
-app.teyitrandevu.com           → işletme paneli                   (Vercel)
+onayrandevu.com/              → pazarlama sitesi, kayıt          (Vercel)
+onayrandevu.com/r/[slug]      → public randevu sayfası           (Vercel, ISR)
+app.onayrandevu.com           → işletme paneli                   (Vercel)
 Supabase                       → Postgres + Auth + Storage + Realtime
 pg_cron + pgmq                 → hatırlatma kuyruğu, temizlik işleri
 ```
@@ -532,7 +532,7 @@ calendar_event_links  appointment_id, connection_id, external_event_id, etag, la
   ekranı). İstenen tek yetki `calendar.events`; fazlası istenmez, izin ekranı ne kadar sade olursa
   bağlanma oranı o kadar yüksek.
 - **Refresh token Supabase Vault'ta**, tabloda değil.
-- **Ayrı takvim oluşturulur:** hekimin ana takvimine yazılmaz, "TeyitRandevu — Klinik" adlı ayrı
+- **Ayrı takvim oluşturulur:** hekimin ana takvimine yazılmaz, "OnayRandevu — Klinik" adlı ayrı
   bir Google takvimi açılır. Hekim istediğinde tek tıkla gizler ya da rengini değiştirir. Kişisel
   takvimi kirletmemek, benimsenmeyi doğrudan etkiler.
 - **Maskeleme — KVKK gereği ayar, varsayılanı korumacı:**
@@ -723,7 +723,7 @@ test etmek. Yarım günlük iş, üretim koduna karışmaz.
 | Taraf | Sıfat | Sorumluluk |
 |---|---|---|
 | Klinik / berber | **Veri sorumlusu** | Hastanın verisini toplama amacını belirler, aydınlatma ve rızadan sorumlu |
-| TeyitRandevu | **Veri işleyen** | Onun adına saklar ve işler, talimat dışına çıkamaz |
+| OnayRandevu | **Veri işleyen** | Onun adına saklar ve işler, talimat dışına çıkamaz |
 
 Bu ayrım ürünün her yerini etkiliyor: aydınlatma metnini klinik verir, siz altyapıyı sunarsınız.
 Her işletmeyle **veri işleyen sözleşmesi** imzalanması zorunlu — üyelik sözleşmesinin eki olarak,
@@ -813,7 +813,7 @@ sektöre göre filtrelenmeli — bu bir ürün özelliği, hukuki bir zorunluluk
   gizlilik politikası, çerez politikası, mesafeli satış sözleşmesi + ön bilgilendirme formu,
   iptal-iade koşulları, SLA.
 - **Fatura:** e-arşiv fatura zorunluluğu; abonelik döngüsüne bağlı otomatik faturalama Faz 5'te.
-- **Marka:** "TeyitRandevu" için TÜRKPATENT marka başvurusu — 9. ve 42. sınıflar. Başvuru süreci
+- **Marka:** "OnayRandevu" için TÜRKPATENT marka başvurusu — 9. ve 42. sınıflar. Başvuru süreci
   aylar sürüyor, ilk haftada başlatılmalı.
 - **Alan adı ve e-posta:** kurumsal e-posta, SPF/DKIM/DMARC kaydı (hatırlatma e-postaları spam'e
   düşmesin — teknik bir konu ama ticari sonucu var).

@@ -14,10 +14,10 @@ export default function AuthLayout({
           <Link
             href="/"
             className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink no-underline"
-            aria-label="TeyitRandevu ana sayfa"
+            aria-label="OnayRandevu ana sayfa"
           >
             <LogoMark className="size-5" />
-            TeyitRandevu
+            OnayRandevu
           </Link>
         </div>
       </header>

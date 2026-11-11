@@ -16,7 +16,7 @@ import type { User } from "@supabase/supabase-js";
  */
 
 /** Demo hesaplarının e-posta alanı. Gerçek posta almaz, alması da gerekmez. */
-export const DEMO_EMAIL_DOMAIN = "vitrin.teyitrandevu.com";
+export const DEMO_EMAIL_DOMAIN = "vitrin.onayrandevu.com";
 export const DEMO_EMAIL_PREFIX = "vitrin-";
 
 /** Bu süreden eski demo hesapları temizlik betiğinde silinir. */
@@ -26,7 +26,7 @@ export const DEMO_TTL_HOURS = 24;
    hâlâ bunu kuruyor ve panel banner'ı onu da demo sayıyor. */
 export const DEMO_TENANT_SLUG = "vitrin-dis-klinigi";
 export const DEMO_TENANT_NAME = "Vitrin Diş Kliniği";
-export const DEMO_EMAIL_DEFAULT = "vitrin@teyitrandevu.com";
+export const DEMO_EMAIL_DEFAULT = "vitrin@onayrandevu.com";
 
 export function isDemoEnabled(): boolean {
   return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) && process.env.DEMO_KAPALI !== "1";

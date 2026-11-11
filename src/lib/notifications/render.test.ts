@@ -40,8 +40,8 @@ test("başka zaman dilimindeki şube kendi saatini gösterir", () => {
 });
 
 test("randevu bağlantısı site adresiyle birleşir", () => {
-  const vars = buildVariables(payload, { siteUrl: "https://teyitrandevu.com/" });
-  assert.equal(vars.randevu_baglantisi, "https://teyitrandevu.com/r/demo/randevu/abc");
+  const vars = buildVariables(payload, { siteUrl: "https://onayrandevu.com/" });
+  assert.equal(vars.randevu_baglantisi, "https://onayrandevu.com/r/demo/randevu/abc");
 });
 
 test("site adresi yoksa bağlantı yolu olarak kalır, undefined olmaz", () => {

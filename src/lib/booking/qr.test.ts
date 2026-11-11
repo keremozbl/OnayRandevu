@@ -29,7 +29,7 @@ test("sürüm veriye göre seçilir, kenar 17 + 4v olur", () => {
 });
 
 test("üç köşede göz deseni var, dördüncüde yok", () => {
-  const m = qrMatrix("https://teyitrandevu.com/r/ornek-klinik");
+  const m = qrMatrix("https://onayrandevu.com/r/ornek-klinik");
   const size = m.length;
 
   const isFinder = (top: number, left: number) => {
@@ -50,7 +50,7 @@ test("üç köşede göz deseni var, dördüncüde yok", () => {
 });
 
 test("zamanlama desenleri ve sabit siyah modül yerinde", () => {
-  const m = qrMatrix("https://teyitrandevu.com/r/ornek-klinik");
+  const m = qrMatrix("https://onayrandevu.com/r/ornek-klinik");
   const size = m.length;
 
   for (let i = 8; i < size - 8; i++) {
@@ -62,7 +62,7 @@ test("zamanlama desenleri ve sabit siyah modül yerinde", () => {
 });
 
 test("aynı girdi aynı matrisi verir", () => {
-  const url = "https://teyitrandevu.com/r/ozel-dis-klinigi";
+  const url = "https://onayrandevu.com/r/ozel-dis-klinigi";
   assert.deepEqual(qrMatrix(url), qrMatrix(url));
 });
 
@@ -77,9 +77,9 @@ test("kapasiteyi aşan veri sessizce kırpılmaz, reddedilir", () => {
 test("matristen okunan veri girdiyle aynı", () => {
   for (const text of [
     "a",
-    "https://teyitrandevu.com/r/ornek",
-    "https://teyitrandevu.com/r/ozel-dis-klinigi-kadikoy",
-    "https://teyitrandevu.com/r/" + "u".repeat(120), // sürüm 8-9 bandı
+    "https://onayrandevu.com/r/ornek",
+    "https://onayrandevu.com/r/ozel-dis-klinigi-kadikoy",
+    "https://onayrandevu.com/r/" + "u".repeat(120), // sürüm 8-9 bandı
     "x".repeat(QR_MAX_BYTES), // tam kapasite, sürüm 10
   ]) {
     assert.equal(decode(qrMatrix(text)), text, text.slice(0, 32));
@@ -87,7 +87,7 @@ test("matristen okunan veri girdiyle aynı", () => {
 });
 
 test("Türkçe karakterler UTF-8 olarak taşınır", () => {
-  const text = "https://teyitrandevu.com/r/guzellik — Şişli Güzellik Salonu";
+  const text = "https://onayrandevu.com/r/guzellik — Şişli Güzellik Salonu";
   assert.equal(decode(qrMatrix(text)), text);
 });
 
@@ -302,8 +302,8 @@ function decode(m: boolean[][]): string {
 // ------------------------------------------------------------------ SVG
 
 test("SVG tek yol çizer ve modül sayısı kadar kutu kaplar", () => {
-  const svg = qrSvg("https://teyitrandevu.com/r/ornek", { title: "Randevu sayfası" });
-  const size = qrMatrix("https://teyitrandevu.com/r/ornek").length;
+  const svg = qrSvg("https://onayrandevu.com/r/ornek", { title: "Randevu sayfası" });
+  const size = qrMatrix("https://onayrandevu.com/r/ornek").length;
 
   assert.match(svg, new RegExp(`viewBox="0 0 ${size + 8} ${size + 8}"`));
   assert.equal(svg.match(/<path/g)?.length, 1);
@@ -312,7 +312,7 @@ test("SVG tek yol çizer ve modül sayısı kadar kutu kaplar", () => {
 });
 
 test("başlık verilmezse SVG ekran okuyucudan gizlenir", () => {
-  assert.match(qrSvg("https://teyitrandevu.com/r/ornek"), /aria-hidden="true"/);
+  assert.match(qrSvg("https://onayrandevu.com/r/ornek"), /aria-hidden="true"/);
 });
 
 test("kenar boşluğu ayarlanabilir", () => {

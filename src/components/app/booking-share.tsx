@@ -7,7 +7,7 @@ import { bookingDisplayUrl, bookingUrl, shareChannels } from "@/lib/booking/shar
  *
  * Kurulum biter bitmez bir kez, ayarlarda ise kalıcı olarak görünüyor.
  * Tek bileşen olmasının sebebi: adresi iki yerde iki türlü yazmak, birinin
- * diğerinden sapmasıyla biter — eski sihirbazdaki sabit "teyitrandevu.com"
+ * diğerinden sapmasıyla biter — eski sihirbazdaki sabit "onayrandevu.com"
  * metni tam olarak böyle sapmıştı.
  *
  * Sıralama kullanım sıklığına göre: önce bağlantının kendisi (kopyalanıp

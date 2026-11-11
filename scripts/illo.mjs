@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SRC = "C:/Users/kerem/AppData/Local/Temp/claude/C--Users-kerem-OneDrive-Masa-st--TeyitRandevu/1efee10a-cac8-44c5-8a52-89ac24eab5da/scratchpad/undraw/package/svgs";
-const OUT = "C:/Users/kerem/OneDrive/Masaüstü/TeyitRandevu/public/illo";
+const SRC = "C:/Users/kerem/AppData/Local/Temp/claude/C--Users-kerem-OneDrive-Masa-st--OnayRandevu/1efee10a-cac8-44c5-8a52-89ac24eab5da/scratchpad/undraw/package/svgs";
+const OUT = "C:/Users/kerem/OneDrive/Masaüstü/OnayRandevu/public/illo";
 
 const P = {
   dark: "#2F2E41", dark2: "#3F3D56", grey: "#E6E6E6", grey2: "#F2F2F2",

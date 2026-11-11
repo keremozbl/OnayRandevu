@@ -40,10 +40,10 @@ import {
 } from "@/lib/marketing/content";
 
 export const metadata: Metadata = {
-  // `absolute`: ana sayfa kök layout'taki "%s · TeyitRandevu" şablonunu
-  // kullanmaz, yoksa başlık "TeyitRandevu … · TeyitRandevu" olurdu.
+  // `absolute`: ana sayfa kök layout'taki "%s · OnayRandevu" şablonunu
+  // kullanmaz, yoksa başlık "OnayRandevu … · OnayRandevu" olurdu.
   title: {
-    absolute: "TeyitRandevu · Randevuyla çalışan işletmeler için randevu sistemi",
+    absolute: "OnayRandevu · Randevuyla çalışan işletmeler için randevu sistemi",
   },
   description: PRODUCT.summary,
 };
@@ -148,7 +148,7 @@ export default function AnaSayfa() {
               etmiyor ve öğlen değişen bir saat listeye hiç yansımıyor.
             </p>
             <p className={BODY}>
-              TeyitRandevu’da o liste bir çıktı: ekranda görünür, A4 olarak yazdırılır, Excel olarak
+              OnayRandevu’da o liste bir çıktı: ekranda görünür, A4 olarak yazdırılır, Excel olarak
               indirilir. Üçü de aynı veriden üretilir, yani biri güncelken diğeri eski olamaz.
             </p>
             <ul className="flex flex-col gap-2.5 pt-1">
@@ -293,7 +293,7 @@ export default function AnaSayfa() {
                     Defter ve Excel
                   </th>
                   <th scope="col" className="w-2/5 py-3 text-[14px] font-medium text-brand">
-                    TeyitRandevu
+                    OnayRandevu
                   </th>
                 </tr>
               </thead>
@@ -466,7 +466,7 @@ export default function AnaSayfa() {
 
           <p className="max-w-2xl pt-10 text-[14px] leading-relaxed text-ink-3">
             Bunlar sistemin tuttuğu kayıtlardır, bir uygunluk belgesi değildir. Veri sorumlusu
-            işletmenin kendisidir; TeyitRandevu veri işleyen sıfatıyla altyapıyı sağlar ve gerekli
+            işletmenin kendisidir; OnayRandevu veri işleyen sıfatıyla altyapıyı sağlar ve gerekli
             kayıtları tutar.
           </p>
         </Container>

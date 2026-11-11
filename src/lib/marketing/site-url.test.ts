@@ -40,28 +40,28 @@ test("hiçbir şey tanımlı değilse localhost", () => {
 
 test("elle verilen değer kazanır", () => {
   setEnv({
-    NEXT_PUBLIC_SITE_URL: "https://teyitrandevu.com",
+    NEXT_PUBLIC_SITE_URL: "https://onayrandevu.com",
     NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "teyit.vercel.app",
   });
-  assert.equal(siteUrl(), "https://teyitrandevu.com");
+  assert.equal(siteUrl(), "https://onayrandevu.com");
 });
 
 test("sondaki eğik çizgi atılır", () => {
-  setEnv({ NEXT_PUBLIC_SITE_URL: "https://teyitrandevu.com///" });
-  assert.equal(siteUrl(), "https://teyitrandevu.com");
+  setEnv({ NEXT_PUBLIC_SITE_URL: "https://onayrandevu.com///" });
+  assert.equal(siteUrl(), "https://onayrandevu.com");
 });
 
 test("Vercel adresi protokolsüz gelir, https eklenir", () => {
-  setEnv({ NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "teyitrandevu.vercel.app" });
-  assert.equal(siteUrl(), "https://teyitrandevu.vercel.app");
+  setEnv({ NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "onayrandevu.vercel.app" });
+  assert.equal(siteUrl(), "https://onayrandevu.vercel.app");
 });
 
 test("Vercel'de hiçbir ayar yapılmadan doğru adres çıkar", () => {
   setEnv({
     NEXT_PUBLIC_VERCEL_ENV: "production",
-    NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "teyitrandevu.vercel.app",
+    NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "onayrandevu.vercel.app",
   });
-  assert.equal(siteUrl(), "https://teyitrandevu.vercel.app");
+  assert.equal(siteUrl(), "https://onayrandevu.vercel.app");
 });
 
 test("Vercel'de localhost yazan elle değer yok sayılır", () => {
@@ -74,9 +74,9 @@ test("Vercel'de localhost yazan elle değer yok sayılır", () => {
     setEnv({
       NEXT_PUBLIC_SITE_URL: local,
       NEXT_PUBLIC_VERCEL_ENV: "production",
-      NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "teyitrandevu.vercel.app",
+      NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "onayrandevu.vercel.app",
     });
-    assert.equal(siteUrl(), "https://teyitrandevu.vercel.app", local);
+    assert.equal(siteUrl(), "https://onayrandevu.vercel.app", local);
   }
 });
 

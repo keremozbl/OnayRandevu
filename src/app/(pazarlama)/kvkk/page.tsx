@@ -7,13 +7,13 @@ import { buildSiteNotice } from "@/lib/legal/site-texts";
  *
  * Kliniklerin hasta aydınlatması bundan AYRI ve her kurumun kendi randevu
  * sayfasında (`/r/<slug>/kvkk`): orada veri sorumlusu kurumdur, burada
- * TeyitRandevu.
+ * OnayRandevu.
  */
 
 export const metadata: Metadata = {
   title: "Aydınlatma metni",
   description:
-    "TeyitRandevu sitesinde paylaşılan kişisel verilerin işlenmesine ilişkin aydınlatma metni.",
+    "OnayRandevu sitesinde paylaşılan kişisel verilerin işlenmesine ilişkin aydınlatma metni.",
 };
 
 export default function SiteKvkkSayfasi() {

@@ -123,7 +123,7 @@ export default async function BookingLayout({
             <span>
               Randevu altyapısı{" "}
               <span translate="no" className="text-ink-2">
-                TeyitRandevu
+                OnayRandevu
               </span>
             </span>
           </p>

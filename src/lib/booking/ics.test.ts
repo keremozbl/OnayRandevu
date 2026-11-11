@@ -19,7 +19,7 @@ test("zorunlu alanlar ve CRLF", () => {
   const ics = buildIcs(base);
   assert.match(ics, /^BEGIN:VCALENDAR\r\n/);
   assert.match(ics, /\r\nEND:VCALENDAR\r\n$/);
-  assert.match(ics, /\r\nUID:abc123@teyitrandevu\r\n/);
+  assert.match(ics, /\r\nUID:abc123@onayrandevu\r\n/);
   assert.match(ics, /\r\nDTSTART:20260904T060000Z\r\n/);
   assert.match(ics, /\r\nDTEND:20260904T063000Z\r\n/);
   assert.ok(!ics.includes("\n\n"));

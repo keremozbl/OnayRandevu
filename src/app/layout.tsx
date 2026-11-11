@@ -24,15 +24,15 @@ export const metadata: Metadata = {
   // Paylaşım kartındaki ve sitemap'teki adres aynı yerden gelir (site-url.ts).
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "TeyitRandevu",
-    template: "%s · TeyitRandevu",
+    default: "OnayRandevu",
+    template: "%s · OnayRandevu",
   },
   description:
     "Randevuyla çalışan işletmeler için randevu, müşteri takibi ve otomatik hatırlatma sistemi.",
   openGraph: {
     type: "website",
     locale: "tr_TR",
-    siteName: "TeyitRandevu",
+    siteName: "OnayRandevu",
   },
   twitter: { card: "summary_large_image" },
 };

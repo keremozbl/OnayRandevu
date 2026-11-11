@@ -46,10 +46,10 @@ export default async function AppLayout({
             href="/app"
             className="flex shrink-0 items-center gap-2 text-[15px] font-semibold tracking-tight text-ink no-underline"
             translate="no"
-            aria-label="TeyitRandevu ana sayfa"
+            aria-label="OnayRandevu ana sayfa"
           >
             <LogoMark className="size-5" />
-            <span className="hidden sm:inline">TeyitRandevu</span>
+            <span className="hidden sm:inline">OnayRandevu</span>
           </Link>
 
           <span className="text-ink-3" aria-hidden="true">

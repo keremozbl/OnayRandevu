@@ -1,4 +1,4 @@
-# TeyitRandevu
+# OnayRandevu
 
 Klinik ve işletmeler için randevu, hasta takibi ve otomatik hatırlatma sistemi.
 Çok kiracılı; işletme kayıt olur, sektörünü seçer, hazır bir şablonla kendi

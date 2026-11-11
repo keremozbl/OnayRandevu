@@ -79,7 +79,7 @@ function sampleReminder(template: SectorTemplate): string {
   variables.kurum_adi = `Örnek ${template.label.split(" ")[0]}`;
   variables.hekim_adi = [staff?.title, staff?.name].filter(Boolean).join(" ") || "Uzman 1";
   variables.hizmet_adi = template.services[0]?.name ?? "Randevu";
-  variables.randevu_baglantisi = "teyitrandevu.com/r/…";
+  variables.randevu_baglantisi = "onayrandevu.com/r/…";
 
   return renderTemplate(notification.body, variables).text;
 }

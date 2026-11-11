@@ -1,4 +1,4 @@
-# TeyitRandevu
+# OnayRandevu
 
 Çok kiracılı randevu ve müşteri takip SaaS'ı. Motor sektörden bağımsız: sektör
 şablonları `src/lib/templates/*.json` içinde ve yeni sektör eklemek kod

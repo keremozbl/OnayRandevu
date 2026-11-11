@@ -30,7 +30,7 @@ export default function PazarlamaLayout({ children }: { children: React.ReactNod
           yapıyor. Düz zemin, tek çizgi. */}
       <header className="sticky top-0 z-10 border-b border-border bg-bg">
         <Container className="flex h-[60px] items-center gap-6">
-          <Link href="/" className="no-underline" aria-label="TeyitRandevu ana sayfa">
+          <Link href="/" className="no-underline" aria-label="OnayRandevu ana sayfa">
             <Wordmark />
           </Link>
 

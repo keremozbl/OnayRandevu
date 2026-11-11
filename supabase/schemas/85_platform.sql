@@ -2,12 +2,12 @@
 -- 85_platform — platformun kendi verisi: demo talepleri ve platform yöneticisi
 -- =============================================================================
 -- Buradaki iki tablo, şimdiye kadarki her tablodan FARKLI bir şeye ait: bir
--- kuruma değil, TeyitRandevu'nun kendisine.
+-- kuruma değil, OnayRandevu'nun kendisine.
 --
 -- Bu ayrım hukuki olarak da geçerli. Hasta verisinde kurum veri sorumlusu,
--- TeyitRandevu veri işleyendir (Plan 11.1). Pazarlama sitesindeki demo
+-- OnayRandevu veri işleyendir (Plan 11.1). Pazarlama sitesindeki demo
 -- talebinde roller yer değiştirir: talebi bırakan kişinin verisinde **veri
--- sorumlusu TeyitRandevu'dur.** Bu yüzden rıza kaydı `consents` tablosuna
+-- sorumlusu OnayRandevu'dur.** Bu yüzden rıza kaydı `consents` tablosuna
 -- yazılmaz — o tablo kiracıya bağlıdır (`tenant_id not null`) ve oradaki her
 -- satır bir kurumun sorumluluğundadır. Talebin kendi onayı kendi satırında
 -- durur.

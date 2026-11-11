@@ -179,7 +179,7 @@ const SLOTS = ["09:00", "09:30", "10:30", "11:00", "13:00", "14:30"];
 export function BookingMock() {
   return (
     <div className={frame} aria-hidden="true">
-      <Chrome label="teyitrandevu.com/r/ayna-salon" />
+      <Chrome label="onayrandevu.com/r/ayna-salon" />
       <div className="flex flex-col gap-3 p-3">
         <p className="text-[12px] text-ink-2">2 Eylül Çarşamba · Saç boyası · 45 dakika</p>
         <div className="grid grid-cols-3 gap-1.5">

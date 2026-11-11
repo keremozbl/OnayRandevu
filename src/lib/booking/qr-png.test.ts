@@ -5,7 +5,7 @@ import { inflateSync } from "node:zlib";
 import { qrPng } from "./qr-png.ts";
 import { qrMatrix } from "./qr.ts";
 
-const URL = "https://teyitrandevu.com/r/ozel-dis-klinigi";
+const URL = "https://onayrandevu.com/r/ozel-dis-klinigi";
 
 /** PNG parçalarını sırayla okur: [tip, veri] çiftleri. */
 function chunks(png: Uint8Array): [string, Uint8Array][] {

@@ -21,7 +21,7 @@
  */
 
 export const PRODUCT = {
-  name: "TeyitRandevu",
+  name: "OnayRandevu",
   /** Tek cümlede ne olduğu; meta description ve paylaşım kartı da bunu kullanır */
   summary:
     "Randevuyla çalışan işletmeler için randevu, müşteri takibi ve hatırlatma sistemi: salon, klinik, danışmanlık ofisi. Günün programı her sabah hazır.",

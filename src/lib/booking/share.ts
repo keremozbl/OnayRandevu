@@ -3,7 +3,7 @@ import { siteUrl } from "@/lib/marketing/site-url";
 /**
  * Kurumun müşterisine vereceği randevu bağlantısı ve yanındaki hazır metinler.
  *
- * Adres tek yerden üretiliyor. Daha önce kurulum sihirbazı "teyitrandevu.com/r/"
+ * Adres tek yerden üretiliyor. Daha önce kurulum sihirbazı "onayrandevu.com/r/"
  * yazısını elle taşıyordu; `NEXT_PUBLIC_SITE_URL` başka bir alan adına
  * ayarlandığında sihirbaz yanlış adresi söylüyordu ve kurum o adresi
  * Instagram'ına koyuyordu. Artık kurulumda gösterilen, ayarlarda yazan,

@@ -9,7 +9,7 @@ create type public.tenant_status as enum ('trial', 'active', 'suspended', 'cance
 create table public.tenants (
   id            uuid primary key default gen_random_uuid(),
   name          text not null check (length(btrim(name)) between 2 and 120),
-  -- public randevu sayfasının adresi: teyitrandevu.com/r/<slug>
+  -- public randevu sayfasının adresi: onayrandevu.com/r/<slug>
   slug          text not null unique check (slug ~ '^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$'),
   family        public.business_family not null,
   -- aile içindeki şablon anahtarı: 'dis_klinigi', 'berber', ...

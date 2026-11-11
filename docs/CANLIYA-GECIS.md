@@ -247,7 +247,7 @@ gerçek olmayan üç şey var ve üçü de kod değil, ticari karar.
 | Ne | Şu an | Nerede |
 |---|---|---|
 | Alan adı | yok; `NEXT_PUBLIC_SITE_URL` boşsa `localhost` | `src/lib/marketing/site-url.ts` — sitemap, robots, paylaşım kartı **ve kurumun randevu bağlantısı** buradan besleniyor (bkz. B16) |
-| Tüzel kişi ve iletişim | `iletisim@teyitrandevu.com` **uydurma**, adres ve telefon `null` | `SITE_CONTACT`, `src/lib/legal/site-texts.ts` |
+| Tüzel kişi ve iletişim | `iletisim@onayrandevu.com` **uydurma**, adres ve telefon `null` | `SITE_CONTACT`, `src/lib/legal/site-texts.ts` |
 | Fiyatlar | **temsilî** — 890 / 1.890 / görüşelim | `PLANS` ve `PRICING_IS_DRAFT`, `src/lib/marketing/content.ts` |
 
 `PRICING_IS_DRAFT` true olduğu sürece fiyat sayfası "fiyatlar temsilidir"
@@ -277,7 +277,7 @@ olmadığı için ayrı bir platform katmanı kuruldu:
 
 Ticari ileti onayı talebin kendi satırında (`marketing_ok`): "demo istiyorum"
 demek kampanya maili almayı kabul etmek değildir. Bu talepte veri sorumlusu
-**TeyitRandevu'dur** — hasta verisindeki rolün tersi (Plan 11.1), rıza kaydı da
+**OnayRandevu'dur** — hasta verisindeki rolün tersi (Plan 11.1), rıza kaydı da
 o yüzden kiracıya bağlı `consents` tablosuna yazılmıyor.
 
 

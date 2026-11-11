@@ -3,8 +3,8 @@
  *
  * DİKKAT — burada roller `consent-texts.ts`teki ile YER DEĞİŞTİRİR:
  *
- *   Hasta verisinde:  klinik = veri sorumlusu, TeyitRandevu = veri işleyen
- *   Demo talebinde:   TeyitRandevu = VERİ SORUMLUSU
+ *   Hasta verisinde:  klinik = veri sorumlusu, OnayRandevu = veri işleyen
+ *   Demo talebinde:   OnayRandevu = VERİ SORUMLUSU
  *
  * Yani bu metnin arkasında duran biziz. Formu dolduran kişinin adı, e-postası
  * ve mesajı bizim sorumluluğumuzda işleniyor; kayıt da kiracıya bağlı
@@ -23,8 +23,8 @@ export const SITE_NOTICE_VERSION = "2026-09-01.1";
  * değerler gerçek değil; site bu hâliyle yayına alınamaz (CANLIYA-GECIS B11).
  */
 export const SITE_CONTACT = {
-  legalName: "TeyitRandevu",
-  email: "iletisim@teyitrandevu.com",
+  legalName: "OnayRandevu",
+  email: "iletisim@onayrandevu.com",
   address: null as string | null,
   phone: null as string | null,
   dataRegion: "Almanya (Frankfurt)",
@@ -56,7 +56,7 @@ export function buildSiteNotice(): { version: string; title: string; sections: L
         paragraphs: [
           `Bu sitede paylaştığınız kişisel veriler, 6698 sayılı Kişisel Verilerin Korunması Kanunu uyarınca veri sorumlusu sıfatıyla ${SITE_CONTACT.legalName} tarafından işlenir.`,
           contact ? `İletişim: ${contact}` : "İletişim bilgileri iletişim sayfasında yer alır.",
-          "Kliniklerin hasta verileri bu metnin kapsamı dışındadır: orada veri sorumlusu ilgili kliniktir, TeyitRandevu yalnızca veri işleyendir. Hastalara yönelik aydınlatma metni her kliniğin kendi randevu sayfasında yayımlanır.",
+          "Kliniklerin hasta verileri bu metnin kapsamı dışındadır: orada veri sorumlusu ilgili kliniktir, OnayRandevu yalnızca veri işleyendir. Hastalara yönelik aydınlatma metni her kliniğin kendi randevu sayfasında yayımlanır.",
         ],
       },
       {

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { isPlatformAdmin } from "@/lib/platform/queries";
 
 /**
- * Platform yönetimi — TeyitRandevu'nun kendi ekranı, kiracıların değil.
+ * Platform yönetimi — OnayRandevu'nun kendi ekranı, kiracıların değil.
  *
  * `/app` altında DEĞİL: oradaki her sayfa bir kurumun bağlamında çalışıyor ve
  * demo talepleri hiçbir kuruma ait değil. Kiracı panelinde gösterilseydi her

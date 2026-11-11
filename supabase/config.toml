@@ -1,6 +1,6 @@
 # Supabase yerel geliştirme yapılandırması.
 # project_id, `supabase link` ile bulut projesine bağlandığında güncellenir.
-project_id = "teyitrandevu"
+project_id = "onayrandevu"
 
 [db]
 major_version = 17

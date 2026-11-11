@@ -17,7 +17,7 @@
  * bilinmezse kayıt hukuken bir şey kanıtlamaz. Sürüm değişince eski kayıtlar
  * geçersiz olmaz, yalnız eski metne bağlı kalır.
  *
- * Veri sorumlusu KURUMDUR (klinik), TeyitRandevu veri işleyendir (Plan 11.1).
+ * Veri sorumlusu KURUMDUR (klinik), OnayRandevu veri işleyendir (Plan 11.1).
  * Metin bu yüzden kurum adıyla üretilir.
  *
  * Bu metinler hukuk danışmanı onayından GEÇMEDİ — canlıya çıkmadan önce
@@ -114,7 +114,7 @@ export function buildDisclosureText(
           contactLine
             ? `İletişim: ${contactLine}`
             : "İletişim bilgilerine randevu sayfasının alt bölümünden ulaşabilirsiniz.",
-          "Randevu sisteminin işletilmesinde TeyitRandevu veri işleyen sıfatıyla hizmet vermekte, verilerinizi yalnızca veri sorumlusunun talimatı doğrultusunda işlemektedir.",
+          "Randevu sisteminin işletilmesinde OnayRandevu veri işleyen sıfatıyla hizmet vermekte, verilerinizi yalnızca veri sorumlusunun talimatı doğrultusunda işlemektedir.",
         ],
       },
       {

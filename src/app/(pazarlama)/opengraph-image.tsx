@@ -8,7 +8,7 @@ import { ImageResponse } from "next/og";
  * `globals.css` içindeki koyu tema değişirse buranın da değişmesi gerekir.
  */
 
-export const alt = "TeyitRandevu — klinik, salon ve danışmanlık için randevu sistemi";
+export const alt = "OnayRandevu — klinik, salon ve danışmanlık için randevu sistemi";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -35,7 +35,7 @@ export default function OpengraphImage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 10, height: 10, borderRadius: 5, background: ACCENT }} />
-          <div style={{ fontSize: 28, color: INK, letterSpacing: -0.5 }}>TeyitRandevu</div>
+          <div style={{ fontSize: 28, color: INK, letterSpacing: -0.5 }}>OnayRandevu</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
