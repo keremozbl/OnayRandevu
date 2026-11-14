@@ -10,14 +10,24 @@
  * renkli (`src/app/icon.svg`).
  *
  * Boyut dışarıdan `className` ile verilir (kare: ör. `size-6`).
+ *
+ * `mono`: marka yeşili yerine içinde bulunduğu rengi (currentColor) kullanır —
+ * yeşilin teal auth paneli gibi renkli/koyu zeminlerde kaybolduğu yerde işaret
+ * beyaz (ya da zeminin tersi) çizilsin diye.
  */
-export function LogoMark({ className = "size-6" }: { className?: string }) {
+export function LogoMark({
+  className = "size-6",
+  mono = false,
+}: {
+  className?: string;
+  mono?: boolean;
+}) {
   return (
     <svg
       viewBox="0 0 100 100"
       className={`shrink-0 ${className}`}
       fill="none"
-      stroke="var(--brand)"
+      stroke={mono ? "currentColor" : "var(--brand)"}
       aria-hidden="true"
     >
       <path

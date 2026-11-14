@@ -29,7 +29,7 @@ export default function PazarlamaLayout({ children }: { children: React.ReactNod
           listesinde (globals.css) ve altından kayan ürün ızgarasını okunmaz
           yapıyor. Düz zemin, tek çizgi. */}
       <header className="sticky top-0 z-10 border-b border-border bg-bg">
-        <Container className="flex h-[60px] items-center gap-6">
+        <Container className="flex h-[60px] items-center gap-3 sm:gap-6">
           <Link href="/" className="no-underline" aria-label="OnayRandevu ana sayfa">
             <Wordmark />
           </Link>
@@ -37,15 +37,17 @@ export default function PazarlamaLayout({ children }: { children: React.ReactNod
           <SiteNav variant="masaustu" />
 
           <div className="ml-auto flex items-center gap-2">
-            {/* Tema anahtarı ve Giriş yalnızca ≥sm'de başlıkta: dar telefonda
-                üçlü tema segmenti + Giriş + CTA tek satıra sığmayıp sayfayı
-                yatay kaydırıyor ve CTA kırpılıyordu. Mobilde tema footer'da,
-                Giriş footer menüsünde. (max-sm:hidden kullanılıyor çünkü
-                BTN_SMALL'un `inline-flex`'i düz `hidden`'ı eziyor.) */}
+            {/* Tema anahtarı yalnızca ≥sm'de başlıkta: üçlü segment dar telefonda
+                Giriş + CTA ile tek satıra sığmıyordu. Mobilde tema footer'da.
+                Giriş ise mobilde de başlıkta kalır — oturum açışın ilk aradığı
+                yer burası, footer'a kadar inmek zorunda bırakmıyoruz. Dar
+                telefonda sığsın diye mobilde boşluk ve yatay padding kısık.
+                (max-sm:hidden kullanılıyor çünkü BTN_SMALL'un `inline-flex`'i
+                düz `hidden`'ı eziyor.) */}
             <ThemeToggle className="max-sm:hidden" />
             <Link
               href="/giris"
-              className={`${BTN_SMALL} text-ink-2 hover:bg-surface-2 hover:text-ink max-sm:hidden`}
+              className={`${BTN_SMALL} px-2.5 text-ink-2 hover:bg-surface-2 hover:text-ink sm:px-3.5`}
             >
               Giriş
             </Link>
