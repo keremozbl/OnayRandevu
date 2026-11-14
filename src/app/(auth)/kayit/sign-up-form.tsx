@@ -6,6 +6,7 @@ import { useActionState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { AuthDemoInvite } from "@/components/auth-demo-invite";
 import { signUp, type AuthState } from "@/lib/auth/actions";
 
 const EMPTY: AuthState = {};
@@ -22,12 +23,15 @@ export function SignUpForm() {
         </p>
       </div>
 
+      <AuthDemoInvite />
+
       {state.error && <Alert tone="error">{state.error}</Alert>}
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <form action={action} className="flex flex-col gap-4">
         <Field id="full_name" label="Ad Soyad" required>
           <Input
+            size="lg"
             id="full_name"
             name="full_name"
             autoComplete="name"
@@ -38,6 +42,7 @@ export function SignUpForm() {
 
         <Field id="email" label="E-posta" required>
           <Input
+            size="lg"
             id="email"
             name="email"
             type="email"
@@ -56,6 +61,7 @@ export function SignUpForm() {
           required
         >
           <Input
+            size="lg"
             id="password"
             name="password"
             type="password"
@@ -65,14 +71,20 @@ export function SignUpForm() {
           />
         </Field>
 
-        <Button type="submit" variant="primary" disabled={pending}>
+        <Button
+          type="submit"
+          variant="brand"
+          size="lg"
+          className="mt-1 w-full"
+          disabled={pending}
+        >
           {pending ? "Hesap oluşturuluyor…" : "Hesap Oluştur"}
         </Button>
       </form>
 
       <p className="border-t border-border pt-4 text-[13px] text-ink-2">
         Hesabınız var mı?{" "}
-        <Link href="/giris" className="text-accent underline underline-offset-2">
+        <Link href="/giris" className="text-brand underline underline-offset-2">
           Giriş yapın
         </Link>
       </p>

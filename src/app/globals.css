@@ -63,6 +63,21 @@
   --logo-badge-bg: #0A6B4F;
   --logo-badge-fg: #FFFFFF;
 
+  /* --- auth değer paneli -------------------------------------------------------
+     Giriş/kayıt sayfalarının sol paneli: SABİT kimlikli derin yeşil gradyan.
+     Logo rozeti gibi HER İKİ TEMADA DA aynı kalır (tema ile dönmez) — bu yüzden
+     dark bloğunda karşılığı yok. Marka yeşili burada tam güçte kullanılabilir
+     çünkü panelde "onaylandı" durum rengiyle çakışma yok; panel kendi kapalı
+     dünyası. Önceki teal panel markayla çakıştığı için terk edildi; bu yeşil.
+     Metin beyaz, ikincil metin yeşil tonundan türetilmiş (gri değil). */
+  --auth-panel-from:   #0B6A4E;
+  --auth-panel-mid:    #09543F;
+  --auth-panel-to:     #063A2B;
+  --auth-panel-ink:    #FFFFFF;
+  --auth-panel-ink-2:  #C8EEDC;
+  --auth-panel-accent: #6FE7BE;
+  --auth-panel-line:   rgba(255, 255, 255, 0.14);
+
   /* --- illüstrasyon zemini ----------------------------------------------------
      İllüstrasyonların (public/illo/*.svg) arkasındaki panel.
 
