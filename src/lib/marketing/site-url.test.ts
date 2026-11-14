@@ -41,7 +41,7 @@ test("hiçbir şey tanımlı değilse localhost", () => {
 test("elle verilen değer kazanır", () => {
   setEnv({
     NEXT_PUBLIC_SITE_URL: "https://onayrandevu.com",
-    NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "teyit.vercel.app",
+    NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "onayrandevu.vercel.app",
   });
   assert.equal(siteUrl(), "https://onayrandevu.com");
 });
@@ -94,7 +94,7 @@ test("localhost'a benzeyen gerçek alan adı yok sayılmaz", () => {
   setEnv({
     NEXT_PUBLIC_SITE_URL: "https://localhost-klinik.com",
     NEXT_PUBLIC_VERCEL_ENV: "production",
-    NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "teyit.vercel.app",
+    NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: "onayrandevu.vercel.app",
   });
   assert.equal(siteUrl(), "https://localhost-klinik.com");
 });
