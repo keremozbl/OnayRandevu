@@ -1886,6 +1886,20 @@ export type Database = {
         Returns: number
       }
       is_slug_available: { Args: { _slug: string }; Returns: boolean }
+      platform_audit_log: {
+        Args: { _limit?: number; _tenant_id?: string }
+        Returns: {
+          id: string
+          actor_id: string | null
+          actor_email: string | null
+          action: string
+          tenant_id: string | null
+          tenant_name: string | null
+          tenant_slug: string | null
+          detail: Json
+          at: string
+        }[]
+      }
       platform_create_tenant: {
         Args: {
           _business_type: string

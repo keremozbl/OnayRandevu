@@ -233,6 +233,64 @@ export async function loadPlatformTenants(): Promise<PlatformTenantRow[]> {
   }));
 }
 
+// ---------------------------------------------------------------------------
+// Platform denetim kaydı — platform yöneticisinin eylemleri (plan/durum/deneme/
+// kurum oluşturma). Kiracının KVKK `audit_logs`'undan AYRI (o hasta erişimi).
+// `platform_audit_log` security definer fonksiyonundan okunur.
+// ---------------------------------------------------------------------------
+
+export type PlatformAuditAction =
+  | "plan.change"
+  | "status.change"
+  | "trial.extend"
+  | "tenant.create";
+
+export type PlatformAuditEntry = {
+  id: string;
+  actorId: string | null;
+  actorEmail: string | null;
+  action: string;
+  tenantId: string | null;
+  tenantName: string | null;
+  tenantSlug: string | null;
+  detail: Record<string, unknown>;
+  at: Date;
+};
+
+export async function loadPlatformAudit(
+  tenantId?: string,
+  limit = 200,
+): Promise<PlatformAuditEntry[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("platform_audit_log", {
+    _tenant_id: tenantId ?? undefined,
+    _limit: limit,
+  });
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    actorId: row.actor_id,
+    actorEmail: row.actor_email,
+    action: row.action,
+    tenantId: row.tenant_id,
+    tenantName: row.tenant_name,
+    tenantSlug: row.tenant_slug,
+    detail:
+      row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
+        ? (row.detail as Record<string, unknown>)
+        : {},
+    at: new Date(row.at),
+  }));
+}
+
+export const AUDIT_ACTION_LABELS: Record<string, string> = {
+  "plan.change": "Plan değişti",
+  "status.change": "Durum değişti",
+  "trial.extend": "Deneme uzatıldı",
+  "tenant.create": "Kurum oluşturuldu",
+};
+
 export async function loadPlatformTenantDetail(
   tenantId: string,
 ): Promise<PlatformTenantDetail | null> {

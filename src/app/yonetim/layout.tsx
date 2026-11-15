@@ -34,6 +34,7 @@ export default async function YonetimLayout({ children }: { children: React.Reac
               { href: "/yonetim", label: "Genel bakış" },
               { href: "/yonetim/kurumlar", label: "Kurumlar" },
               { href: "/yonetim/talepler", label: "Talepler" },
+              { href: "/yonetim/denetim", label: "Denetim" },
             ].map((item) => (
               <Link
                 key={item.href}
