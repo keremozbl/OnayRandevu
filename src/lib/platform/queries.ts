@@ -289,6 +289,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "status.change": "Durum değişti",
   "trial.extend": "Deneme uzatıldı",
   "tenant.create": "Kurum oluşturuldu",
+  "impersonate.start": "Destek girişi başladı",
+  "impersonate.end": "Destek girişi bitti",
 };
 
 export async function loadPlatformTenantDetail(

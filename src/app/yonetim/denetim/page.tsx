@@ -46,6 +46,10 @@ function describeDetail(entry: PlatformAuditEntry): string {
     }
     case "tenant.create":
       return d.slug ? `/r/${String(d.slug)}` : "";
+    case "impersonate.start": {
+      const mins = typeof d.minutes === "number" ? d.minutes : Number(d.minutes ?? 0);
+      return mins ? `${nf.format(mins)} dk` : "";
+    }
     default:
       return "";
   }

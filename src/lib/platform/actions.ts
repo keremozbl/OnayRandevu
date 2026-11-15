@@ -1,9 +1,11 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { TENANT_COOKIE } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
@@ -132,6 +134,72 @@ export async function extendTrialAction(formData: FormData): Promise<void> {
   });
 
   revalidateTenant(parsed.data.tenantId);
+}
+
+/**
+ * Destek-girişi (impersonation) — platform yöneticisi bir kuruma süreli, loglu
+ * "destek için giriş" yapar ve gerçek paneli görür.
+ *
+ * Yetki ve denetim veritabanında: `platform_impersonate` kapıda
+ * `is_platform_admin()` kontrol eder, kuruma süreli owner üyeliği ekler ve
+ * `platform_audit`'e yazar (süre dolunca erişim 35_access'te kendiliğinden
+ * biter). Buradaki iş yalnız RPC'yi çağırmak, aktif kurum cookie'sini hedefe
+ * çevirmek ve panele atmak. Başarısızlıkta detay sayfasına bir sebep koduyla
+ * dönülür.
+ */
+const impersonateSchema = z.object({
+  tenantId: z.uuid(),
+  minutes: z.coerce.number().int().min(5).max(480),
+});
+
+export async function startImpersonationAction(formData: FormData): Promise<void> {
+  const parsed = impersonateSchema.safeParse({
+    tenantId: formData.get("tenantId"),
+    minutes: formData.get("minutes"),
+  });
+  if (!parsed.success) redirect("/yonetim/kurumlar");
+
+  const { tenantId, minutes } = parsed.data;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("platform_impersonate", {
+    _tenant_id: tenantId,
+    _minutes: minutes,
+  });
+
+  const result = (data ?? {}) as { ok?: boolean; reason?: string };
+  if (error || !result.ok) {
+    const reason = result.reason ?? "hata";
+    redirect(`/yonetim/kurumlar/${tenantId}?destek=${reason}`);
+  }
+
+  // Aktif kurumu hedefe çevir ki /app bu kuruma düşsün. Cookie ömrü destek
+  // penceresiyle hizalı; süre zaten RLS'te zorlanıyor, bu yalnız kolaylık.
+  (await cookies()).set(TENANT_COOKIE, tenantId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: minutes * 60,
+  });
+
+  revalidateTenant(tenantId);
+  redirect("/app");
+}
+
+/**
+ * Destek-girişini bitir — /app şeridindeki "Çıkış" buna bağlanır. Üyelik
+ * satırını siler (RPC), aktif kurum cookie'sini temizler ve yönetime döner.
+ */
+export async function endImpersonationAction(formData: FormData): Promise<void> {
+  const tenantId = z.uuid().safeParse(formData.get("tenantId"));
+  const supabase = await createClient();
+  if (tenantId.success) {
+    await supabase.rpc("platform_end_impersonation", { _tenant_id: tenantId.data });
+  }
+
+  (await cookies()).delete(TENANT_COOKIE);
+
+  revalidatePath("/yonetim");
+  redirect(tenantId.success ? `/yonetim/kurumlar/${tenantId.data}` : "/yonetim/kurumlar");
 }
 
 /**

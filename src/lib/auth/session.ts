@@ -11,6 +11,10 @@ export type MembershipSummary = {
   tenant_id: string;
   role_id: string;
   role_key: string;
+  /** Platform destek-girişi satırı mı — /app şeridini tetikler. */
+  is_impersonation: boolean;
+  /** Süreli üyeliğin bitişi (destek-girişi); kalıcı üyede null. */
+  expires_at: string | null;
   tenant: {
     id: string;
     name: string;
@@ -48,18 +52,26 @@ export const listMemberships = cache(async function listMemberships(): Promise<M
   const { data, error } = await supabase
     .from("memberships")
     .select(
-      "tenant_id, role_id, roles!inner(key), tenants!inner(id, name, slug, business_type, timezone, tenant_settings(terminology))",
+      "tenant_id, role_id, is_impersonation, expires_at, roles!inner(key), tenants!inner(id, name, slug, business_type, timezone, tenant_settings(terminology))",
     )
     .eq("is_active", true);
 
   if (error || !data) return [];
 
-  return data.map((row) => {
+  const now = Date.now();
+
+  return data
+    // Süresi dolmuş destek-girişi satırını gösterme: yetki fonksiyonları onu
+    // zaten yok sayıyor, switcher'da ölü bir kurum belirmesin (cron silene dek).
+    .filter((row) => !row.expires_at || new Date(row.expires_at).getTime() > now)
+    .map((row) => {
     const { tenant_settings, ...tenant } = row.tenants;
     return {
       tenant_id: row.tenant_id,
       role_id: row.role_id,
       role_key: row.roles.key,
+      is_impersonation: row.is_impersonation,
+      expires_at: row.expires_at,
       tenant,
       // tenant_settings bire bir ilişki ama PostgREST dizi döndürebiliyor.
       terms: parseTerminology(

@@ -8,6 +8,7 @@ import {
   extendTrialAction,
   setPlanAction,
   setStatusAction,
+  startImpersonationAction,
 } from "@/lib/platform/actions";
 import {
   FAMILY_LABELS,
@@ -32,6 +33,16 @@ const STATUS_ACTIONS: { status: TenantStatus; label: string }[] = [
   { status: "suspended", label: "Askıya al" },
   { status: "cancelled", label: "İptal et" },
 ];
+
+const IMPERSONATE_MINUTES = [30, 60, 120, 240];
+
+const IMPERSONATE_ERRORS: Record<string, string> = {
+  already_member: "Bu kurumda zaten üyeliğiniz var; normal erişiminizle girin.",
+  owner_role_missing: "Kurumun sahip rolü bulunamadı; destek girişi yapılamıyor.",
+  tenant_not_found: "Kurum bulunamadı.",
+  invalid_minutes: "Geçersiz süre seçildi.",
+  hata: "Destek girişi başlatılamadı.",
+};
 
 function QuotaBar({
   label,
@@ -86,15 +97,19 @@ function Stat({ label, value }: { label: string; value: number }) {
 
 export default async function KurumDetaySayfasi({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ destek?: string }>;
 }) {
   const { id } = await params;
+  const { destek } = await searchParams;
   const t = await loadPlatformTenantDetail(id);
   if (!t) notFound();
 
   const st = TENANT_STATUS_LABELS[t.status];
   const limits = planLimits(t.plan);
+  const impersonateError = destek ? (IMPERSONATE_ERRORS[destek] ?? IMPERSONATE_ERRORS.hata) : null;
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4">
@@ -223,6 +238,45 @@ export default async function KurumDetaySayfasi({
             })}
           </div>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded border border-border bg-surface p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-[13px] font-medium text-ink">Destek girişi</h2>
+          <span className="text-[12px] text-ink-3">loglu · süreli · gerçek panel</span>
+        </div>
+        <p className="max-w-prose text-[12px] text-ink-2">
+          Kurumun gerçek panelini (takvim, hasta kartları dahil) sahibi gibi görürsünüz. Giriş ve
+          çıkış platform denetim kaydına yazılır; süre dolunca erişim kendiliğinden biter. Bu,
+          varsayılan olarak kişisel veri görmeme ilkesinin onaylı istisnasıdır — yalnız gerçek bir
+          destek gerektiğinde kullanın.
+        </p>
+        {impersonateError && (
+          <p
+            role="alert"
+            className="rounded border border-st-noshow/40 bg-st-noshow/10 px-3 py-2 text-[12px] text-st-noshow"
+          >
+            {impersonateError}
+          </p>
+        )}
+        <form action={startImpersonationAction} className="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="tenantId" value={t.id} />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="minutes" className="text-[12px] font-medium text-ink-2">
+              Süre
+            </label>
+            <Select id="minutes" name="minutes" defaultValue="60" className="w-32">
+              {IMPERSONATE_MINUTES.map((m) => (
+                <option key={m} value={m}>
+                  {m < 60 ? `${m} dakika` : `${m / 60} saat`}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <Button type="submit" size="sm" variant="secondary">
+            Destek için giriş yap
+          </Button>
+        </form>
       </section>
 
       {limits && (

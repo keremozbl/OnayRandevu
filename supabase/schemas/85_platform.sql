@@ -273,7 +273,7 @@ begin
   select
     t.id, t.name, t.slug, t.family, t.business_type, t.status,
     s.plan, s.trial_ends_at, t.created_at,
-    (select count(*) from public.memberships m where m.tenant_id = t.id and m.is_active),
+    (select count(*) from public.memberships m where m.tenant_id = t.id and m.is_active and not m.is_impersonation),
     (select count(*) from public.resources r where r.tenant_id = t.id and r.is_active and r.kind = 'staff'),
     (select count(*) from public.customers c where c.tenant_id = t.id),
     (select count(*) from public.appointments a where a.tenant_id = t.id),
@@ -315,7 +315,7 @@ begin
     'trial_ends_at',     s.trial_ends_at,
     'timezone',          t.timezone,
     'created_at',        t.created_at,
-    'member_count',      (select count(*) from public.memberships m where m.tenant_id = t.id and m.is_active),
+    'member_count',      (select count(*) from public.memberships m where m.tenant_id = t.id and m.is_active and not m.is_impersonation),
     'resource_count',    (select count(*) from public.resources r where r.tenant_id = t.id and r.is_active),
     'customer_count',    (select count(*) from public.customers c where c.tenant_id = t.id),
     'appointment_count', (select count(*) from public.appointments a where a.tenant_id = t.id),
@@ -334,7 +334,7 @@ begin
       from public.memberships m
       join auth.users u on u.id = m.user_id
       left join public.roles rl on rl.id = m.role_id
-      where m.tenant_id = t.id
+      where m.tenant_id = t.id and not m.is_impersonation
     ), '[]'::jsonb)
   ) into result
   from public.tenants t
@@ -576,3 +576,102 @@ revoke execute on function public.platform_create_tenant(uuid, text, text, publi
   from public, anon;
 grant execute on function public.platform_create_tenant(uuid, text, text, public.business_family, text, text, jsonb)
   to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Destek-girişi (impersonation) — loglu, süreli, gerçek erişim
+--
+-- Platform yöneticisi hedef kuruma GEÇİCİ, SÜRELİ, İŞARETLİ bir owner üyeliği
+-- alır ve kurumun gerçek panelini (/app) görür. Yetki modeli zaten memberships
+-- satırlarına dayandığı için (35_access) yeni bir baypas açmak yerine süresi
+-- dolunca DB'de kendiliğinden düşen bir üyelik veriyoruz — süre koşulu yetki
+-- fonksiyonlarında zorlanıyor, cron yalnız ölü satırı süpürüyor (95_cron).
+--
+-- KVKK: platform yöneticisinin varsayılan PII görmeme ilkesinin (yukarıdaki
+-- platform_* özetleri) BİLİNÇLİ, ONAYLI, LOGLU istisnası. Owner rolüyle
+-- girildiği için tıbbi notlar dahil her şey görünür; kapsam daraltma ileride
+-- ayrı bir "destek" rolüyle yapılabilir. Giriş ve çıkış platform_audit'e yazılır.
+-- -----------------------------------------------------------------------------
+create or replace function public.platform_impersonate(_tenant_id uuid, _minutes int default 60)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_admin uuid := (select auth.uid());
+  v_role  uuid;
+  v_until timestamptz;
+begin
+  if not private.is_platform_admin() then
+    raise exception 'not authorized' using errcode = '42501';
+  end if;
+  if _minutes is null or _minutes < 5 or _minutes > 480 then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_minutes');
+  end if;
+  if not exists (select 1 from public.tenants where id = _tenant_id) then
+    return jsonb_build_object('ok', false, 'reason', 'tenant_not_found');
+  end if;
+
+  -- Zaten gerçek (impersonation olmayan) üyeyse normal erişimi var; taklit etme.
+  if exists (
+    select 1 from public.memberships m
+    where m.user_id = v_admin and m.tenant_id = _tenant_id and not m.is_impersonation
+  ) then
+    return jsonb_build_object('ok', false, 'reason', 'already_member');
+  end if;
+
+  select id into v_role from public.roles
+   where tenant_id = _tenant_id and key = 'owner';
+  if v_role is null then
+    return jsonb_build_object('ok', false, 'reason', 'owner_role_missing');
+  end if;
+
+  v_until := now() + make_interval(mins => _minutes);
+
+  insert into public.memberships (user_id, tenant_id, role_id, is_impersonation, expires_at, accepted_at)
+  values (v_admin, _tenant_id, v_role, true, v_until, now())
+  on conflict (user_id, tenant_id) do update
+    set role_id          = excluded.role_id,
+        is_impersonation = true,
+        expires_at       = excluded.expires_at,
+        is_active        = true;
+
+  insert into public.platform_audit (actor_id, action, tenant_id, detail)
+  values (v_admin, 'impersonate.start', _tenant_id,
+          jsonb_build_object('minutes', _minutes, 'until', v_until));
+
+  return jsonb_build_object('ok', true, 'until', v_until);
+end;
+$$;
+
+create or replace function public.platform_end_impersonation(_tenant_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_admin   uuid := (select auth.uid());
+  v_deleted int;
+begin
+  if not private.is_platform_admin() then
+    raise exception 'not authorized' using errcode = '42501';
+  end if;
+
+  delete from public.memberships
+   where user_id = v_admin and tenant_id = _tenant_id and is_impersonation;
+  get diagnostics v_deleted = row_count;
+
+  if v_deleted > 0 then
+    insert into public.platform_audit (actor_id, action, tenant_id, detail)
+    values (v_admin, 'impersonate.end', _tenant_id, '{}'::jsonb);
+  end if;
+
+  return jsonb_build_object('ok', true, 'ended', v_deleted > 0);
+end;
+$$;
+
+revoke execute on function public.platform_impersonate(uuid, int)  from public, anon;
+revoke execute on function public.platform_end_impersonation(uuid) from public, anon;
+grant execute on function public.platform_impersonate(uuid, int)   to authenticated;
+grant execute on function public.platform_end_impersonation(uuid)  to authenticated;

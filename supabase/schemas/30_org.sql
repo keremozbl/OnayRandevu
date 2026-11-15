@@ -87,6 +87,12 @@ create table public.memberships (
   -- asistan bağımsız çalışmaz: bağlı olduğu hekimlerin kapsamında görür
   assistant_of uuid[] not null default '{}'::uuid[],
   is_active    boolean not null default true,
+  -- süreli üyelik: null = kalıcı. Dolu ve geçmişse yetki fonksiyonları (35_access)
+  -- bu satırı yok sayar. Bugün yalnız platform destek-girişi (85_platform) kullanır.
+  expires_at   timestamptz,
+  -- platform yöneticisinin loglu "destek için giriş" satırını işaretler; gerçek
+  -- üye sayımından ve kurum oluşturma freninden hariç, /app şeridini tetikler.
+  is_impersonation boolean not null default false,
   invited_at   timestamptz,
   accepted_at  timestamptz,
   created_at   timestamptz not null default now(),
@@ -100,6 +106,9 @@ create index memberships_user_tenant_idx on public.memberships (user_id, tenant_
 create index memberships_tenant_idx      on public.memberships (tenant_id);
 create index memberships_role_idx        on public.memberships (role_id);
 create index memberships_resource_idx    on public.memberships (resource_id);
+-- süpürme işinin (95_cron) hedefi: yalnız süreli destek-giriş satırları
+create index memberships_impersonation_idx
+  on public.memberships (expires_at) where is_impersonation;
 
 create trigger memberships_set_updated_at
   before update on public.memberships

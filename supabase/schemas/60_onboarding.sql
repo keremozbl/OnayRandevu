@@ -224,8 +224,10 @@ begin
     raise exception 'Oturum açılmamış' using errcode = '28000';
   end if;
 
-  -- Kötüye kullanım freni: bir kullanıcı sınırsız kurum açamaz.
-  if (select count(*) from public.memberships m where m.user_id = v_user) >= 5 then
+  -- Kötüye kullanım freni: bir kullanıcı sınırsız kurum açamaz. Platform
+  -- destek-girişi (is_impersonation) gerçek kurum değildir, sayılmaz.
+  if (select count(*) from public.memberships m
+        where m.user_id = v_user and not m.is_impersonation) >= 5 then
     raise exception 'Kurum sayısı sınırına ulaşıldı' using errcode = 'P0001';
   end if;
 

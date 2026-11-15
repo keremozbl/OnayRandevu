@@ -157,6 +157,34 @@ $$;
 revoke execute on function private.prune_cron_history(int) from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
+-- Süresi dolmuş platform destek-giriş satırlarının süpürülmesi
+--
+-- Süre zaten yetki katmanında zorlanıyor (35_access: dolmuş üyelik yok sayılır),
+-- yani erişim anında kesiliyor. Bu iş yalnızca ölü `is_impersonation` satırını
+-- temizler — tablo büyümesin ve kurumda artık duran bir "üye" görünmesin diye.
+-- -----------------------------------------------------------------------------
+create or replace function private.sweep_expired_impersonations()
+returns int
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_deleted int;
+begin
+  delete from public.memberships
+   where is_impersonation
+     and expires_at is not null
+     and expires_at < now();
+
+  get diagnostics v_deleted = row_count;
+  return v_deleted;
+end;
+$$;
+
+revoke execute on function private.sweep_expired_impersonations() from public, anon, authenticated;
+
+-- -----------------------------------------------------------------------------
 -- İşler
 --
 -- `cron.schedule` ada göre çalışır: aynı adla yeniden çağrılması işi günceller,
@@ -180,3 +208,8 @@ select cron.schedule('hold-sweep', '* * * * *',
 -- Her gece: bir haftadan eski çalıştırma kaydı.
 select cron.schedule('cron-history', '10 3 * * *',
   $job$ select private.prune_cron_history(7); $job$);
+
+-- Beş dakikada bir: süresi dolmuş destek-giriş satırları. Erişim zaten anında
+-- kesildiği için sık olması şart değil; bu yalnız temizlik.
+select cron.schedule('impersonation-sweep', '*/5 * * * *',
+  $job$ select private.sweep_expired_impersonations(); $job$);

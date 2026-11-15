@@ -5,6 +5,7 @@ import { LogoMark } from "@/components/logo-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { requireTenant } from "@/lib/auth/session";
 import { DEMO_TENANT_SLUG, isDemoUser } from "@/lib/demo/config";
+import { endImpersonationAction } from "@/lib/platform/actions";
 import { readRail } from "@/lib/panel/rail";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -35,6 +36,13 @@ export default async function AppLayout({
   const { active, memberships, user } = await requireTenant();
   const isDemo = isDemoUser(user) || active.tenant.slug === DEMO_TENANT_SLUG;
   const rail = await readRail();
+
+  const impersonationUntil =
+    active.is_impersonation && active.expires_at
+      ? new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" }).format(
+          new Date(active.expires_at),
+        )
+      : null;
 
   const { customer_plural: customers, customer_singular: customer, service_plural: services } =
     active.terms;
@@ -89,6 +97,30 @@ export default async function AppLayout({
             </form>
           </div>
         </div>
+
+        {/* Destek-girişi: platform yöneticisi bu kurumu geçici olarak görüyor.
+            Hangi kurumda olduğu ve ne zaman biteceği gizlenemez bir yerde;
+            çıkış tek tık. (85_platform / 35_access: süre dolunca erişim de biter.) */}
+        {active.is_impersonation && (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-st-noshow bg-st-noshow/10 px-4 py-1.5 text-[13px] text-st-noshow">
+            <strong className="font-medium">Destek girişi.</strong>
+            <span className="min-w-0">
+              <span className="font-medium">{active.tenant.name}</span> kurumunu platform
+              yöneticisi olarak görüyorsunuz
+              {impersonationUntil ? ` — ${impersonationUntil}'e kadar` : ""}. Yaptığınız her işlem
+              gerçek veriyi değiştirir.
+            </span>
+            <form action={endImpersonationAction} className="ml-auto">
+              <input type="hidden" name="tenantId" value={active.tenant_id} />
+              <button
+                type="submit"
+                className="rounded border border-st-noshow px-2 py-0.5 font-medium text-st-noshow transition-colors duration-150 hover:bg-st-noshow hover:text-bg"
+              >
+                Çıkış
+              </button>
+            </form>
+          </p>
+        )}
 
         {/* Vitrin kurumu herkese açık: ziyaretçi buraya gerçek hasta bilgisi
             yazmasın diye uyarı gizlenebilir bir yerde değil, başlığın altında

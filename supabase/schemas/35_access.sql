@@ -24,7 +24,8 @@ as $$
   select coalesce(array_agg(m.tenant_id), '{}'::uuid[])
   from public.memberships m
   where m.user_id = (select auth.uid())
-    and m.is_active;
+    and m.is_active
+    and (m.expires_at is null or m.expires_at > now());
 $$;
 
 create or replace function private.is_tenant_member(_tenant_id uuid)
@@ -39,6 +40,7 @@ as $$
     where m.user_id = (select auth.uid())
       and m.tenant_id = _tenant_id
       and m.is_active
+      and (m.expires_at is null or m.expires_at > now())
   );
 $$;
 
@@ -59,6 +61,7 @@ as $$
   join public.role_permissions rp on rp.role_id = m.role_id
   where m.user_id = (select auth.uid())
     and m.is_active
+    and (m.expires_at is null or m.expires_at > now())
     and rp.permission_key = _perm
     and rp.scope = 'tenant';
 $$;
@@ -79,6 +82,7 @@ as $$
   join public.branches b on b.tenant_id = m.tenant_id
   where m.user_id = (select auth.uid())
     and m.is_active
+    and (m.expires_at is null or m.expires_at > now())
     and rp.permission_key = _perm
     and rp.scope = 'branch'
     and (cardinality(m.branch_ids) = 0 or b.id = any (m.branch_ids));
@@ -101,6 +105,7 @@ as $$
   ) as r
   where m.user_id = (select auth.uid())
     and m.is_active
+    and (m.expires_at is null or m.expires_at > now())
     and rp.permission_key = _perm
     and rp.scope = 'own';
 $$;

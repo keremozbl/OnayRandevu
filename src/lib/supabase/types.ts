@@ -860,9 +860,11 @@ export type Database = {
           assistant_of: string[]
           branch_ids: string[]
           created_at: string
+          expires_at: string | null
           id: string
           invited_at: string | null
           is_active: boolean
+          is_impersonation: boolean
           resource_id: string | null
           role_id: string
           tenant_id: string
@@ -874,9 +876,11 @@ export type Database = {
           assistant_of?: string[]
           branch_ids?: string[]
           created_at?: string
+          expires_at?: string | null
           id?: string
           invited_at?: string | null
           is_active?: boolean
+          is_impersonation?: boolean
           resource_id?: string | null
           role_id: string
           tenant_id: string
@@ -888,9 +892,11 @@ export type Database = {
           assistant_of?: string[]
           branch_ids?: string[]
           created_at?: string
+          expires_at?: string | null
           id?: string
           invited_at?: string | null
           is_active?: boolean
+          is_impersonation?: boolean
           resource_id?: string | null
           role_id?: string
           tenant_id?: string
@@ -1912,8 +1918,16 @@ export type Database = {
         }
         Returns: string
       }
+      platform_end_impersonation: {
+        Args: { _tenant_id: string }
+        Returns: Json
+      }
       platform_extend_trial: {
         Args: { _days: number; _tenant_id: string }
+        Returns: Json
+      }
+      platform_impersonate: {
+        Args: { _minutes?: number; _tenant_id: string }
         Returns: Json
       }
       platform_overview: { Args: Record<string, never>; Returns: Json }
