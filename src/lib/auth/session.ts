@@ -48,13 +48,19 @@ export const requireUser = cache(async function requireUser() {
 
 /** Kullanıcının üye olduğu kurumlar. RLS zaten başkasınınkini göstermez. */
 export const listMemberships = cache(async function listMemberships(): Promise<MembershipSummary[]> {
+  const { user } = await requireUser();
   const supabase = await createClient();
+  // YALNIZ kullanıcının KENDİ üyelikleri. `user_id` filtresi şart: memberships
+  // RLS'i staff.manage olana kurumdaki DİĞER üyeleri de gösterir (90_rls), bu
+  // filtre olmadan sahip kendi switcher'ında tüm ekibi görür — ve destek-girişinde
+  // aynı kuruma düşen iki satırdan (gerçek sahip + impersonation) yanlışı seçilirdi.
   const { data, error } = await supabase
     .from("memberships")
     .select(
       "tenant_id, role_id, is_impersonation, expires_at, roles!inner(key), tenants!inner(id, name, slug, business_type, timezone, tenant_settings(terminology))",
     )
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .eq("user_id", user.id);
 
   if (error || !data) return [];
 

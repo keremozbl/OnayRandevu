@@ -74,7 +74,8 @@ export async function signIn(
       supabase
         .from("memberships")
         .select("tenant_id", { count: "exact", head: true })
-        .eq("is_active", true),
+        .eq("is_active", true)
+        .eq("user_id", user.id),
     ]);
     if (admin && (count ?? 0) === 0) redirect("/yonetim");
   }
