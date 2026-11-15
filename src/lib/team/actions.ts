@@ -156,6 +156,9 @@ export async function createResourceAction(
     if (error.code === "42501") {
       return { error: "Kaynak ekleme yetkiniz yok. Bu işlem `resource.manage` izni ister." };
     }
+    // Plan uzman kotası aşıldı (30_org enforce_resource_quota) — mesaj zaten
+    // kullanıcıya uygun Türkçe; olduğu gibi göster.
+    if (error.code === "P0001") return { error: error.message };
     return { error: `Kaynak eklenemedi: ${error.message}` };
   }
 

@@ -73,6 +73,73 @@ create trigger resources_set_updated_at
   for each row execute function private.set_updated_at();
 
 -- -----------------------------------------------------------------------------
+-- Kota HARD zorlama — aktif uzman (staff) sayısı plan limitini aşamaz.
+-- Kural DB'de (uygulama katmanı atlanabilir). SADECE manuel ekleme engellenir;
+-- onboarding şablonu giriş planından fazla kurabilir ve MUAFtır
+-- (build_tenant_from_template transaction-local `app.onboarding` bayrağı koyar).
+-- Grandfather: zaten aşan kurum bozulmaz, yalnız yeni aktif uzman reddedilir.
+-- Limit SAYILARI plans.ts PLAN_CATALOG.limits ile elle senkron.
+-- -----------------------------------------------------------------------------
+create or replace function private.plan_resource_limit(_plan text)
+returns int
+language sql
+immutable
+set search_path = ''
+as $$
+  select case _plan
+    when 'tek_uzman' then 1
+    when 'ekip'      then 6
+    when 'zincir'    then null
+    else 1
+  end;
+$$;
+
+create or replace function private.enforce_resource_quota()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_limit int;
+  v_count int;
+begin
+  if coalesce(current_setting('app.onboarding', true), '') = 'on' then
+    return new;
+  end if;
+  if new.kind <> 'staff' or not new.is_active then
+    return new;
+  end if;
+
+  v_limit := private.plan_resource_limit(
+    coalesce(
+      (select s.plan from public.tenant_subscriptions s where s.tenant_id = new.tenant_id),
+      'tek_uzman'
+    )
+  );
+  if v_limit is null then
+    return new;
+  end if;
+
+  select count(*) into v_count
+  from public.resources r
+  where r.tenant_id = new.tenant_id and r.is_active and r.kind = 'staff';
+
+  if v_count >= v_limit then
+    raise exception
+      'Plan uzman sınırına ulaşıldı (%/%). Daha fazla uzman için üst pakete geçin.',
+      v_count, v_limit using errcode = 'P0001';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger resources_enforce_quota
+  before insert on public.resources
+  for each row execute function private.enforce_resource_quota();
+
+-- -----------------------------------------------------------------------------
 -- Üyelik — kullanıcının bir kuruma bağlanması ve yetki kapsamı
 -- -----------------------------------------------------------------------------
 create table public.memberships (

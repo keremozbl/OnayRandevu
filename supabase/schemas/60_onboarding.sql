@@ -39,6 +39,10 @@ declare
   v_weekday    int;
   v_staff      uuid[] := '{}'::uuid[];
 begin
+  -- Onboarding kaynakları kota trigger'ından muaf: sektör şablonu giriş
+  -- planından (tek_uzman = 1) fazla uzman kurabilir (30_org enforce_resource_quota).
+  perform set_config('app.onboarding', 'on', true);
+
   -- ---------------------------------------------------------------------------
   -- Kurum ve ayarlar
   -- ---------------------------------------------------------------------------
