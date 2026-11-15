@@ -48,3 +48,44 @@ create table public.tenant_settings (
 create trigger tenant_settings_set_updated_at
   before update on public.tenant_settings
   for each row execute function private.set_updated_at();
+
+-- -----------------------------------------------------------------------------
+-- Abonelik: kiracının planı ve deneme durumu. Kiracı ile 1-1.
+--
+-- Plan kataloğu (ad, fiyat, limit) KODDA yaşar (src/lib/plans.ts + pazarlama);
+-- burada yalnız seçili plan ANAHTARI tutulur. "Upgrade" = bu satırın planını
+-- değiştirmek. Değişiklik yalnız platform `security definer` fonksiyonlarından
+-- yapılır (85_platform); üye yalnız kendi aboneliğini OKUR (90_rls).
+-- -----------------------------------------------------------------------------
+create table public.tenant_subscriptions (
+  tenant_id     uuid primary key references public.tenants (id) on delete cascade,
+  plan          text not null default 'tek_uzman'
+                  check (plan in ('tek_uzman', 'ekip', 'zincir')),
+  trial_ends_at timestamptz,
+  started_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create trigger tenant_subscriptions_set_updated_at
+  before update on public.tenant_subscriptions
+  for each row execute function private.set_updated_at();
+
+-- Her yeni kurum varsayılan abonelikle doğsun (onboarding, demo, test — hepsi
+-- aynı yoldan geçsin diye onboarding RPC'si değil, trigger).
+create or replace function private.create_default_subscription()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.tenant_subscriptions (tenant_id, plan, trial_ends_at)
+  values (new.id, 'tek_uzman', now() + interval '14 days')
+  on conflict (tenant_id) do nothing;
+  return new;
+end;
+$$;
+
+create trigger tenants_create_subscription
+  after insert on public.tenants
+  for each row execute function private.create_default_subscription();

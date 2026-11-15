@@ -9,13 +9,18 @@
 --   1. İlk iş `auth.uid()` kontrolü (anonim çağrı reddedilir),
 --   2. EXECUTE yalnızca `authenticated` rolüne verilir, PUBLIC ve anon'dan alınır.
 
-create or replace function public.create_tenant_from_template(
+-- Ortak kurulum gövdesi: sahibi (_owner) ve durumu (_status) parametreli.
+-- Yetki/limit kontrolü YOK — sarmalayıcıların işi. `private` şema: PostgREST'e
+-- açılmaz, yalnız definer sarmalayıcılar (sahip rolüyle) çağırır.
+create or replace function private.build_tenant_from_template(
+  _owner         uuid,
   _name          text,
   _slug          text,
   _family        public.business_family,
   _business_type text,
   _timezone      text,
-  _payload       jsonb          -- sektör şablonunun içeriği (src/lib/templates)
+  _payload       jsonb,          -- sektör şablonunun içeriği (src/lib/templates)
+  _status        public.tenant_status default 'trial'
 )
 returns uuid
 language plpgsql
@@ -23,32 +28,23 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_user      uuid := (select auth.uid());
-  v_tenant    uuid;
-  v_branch    uuid;
+  v_user       uuid := _owner;
+  v_tenant     uuid;
+  v_branch     uuid;
   v_owner_role uuid;
-  v_resource  uuid;
-  v_service   uuid;
-  v_item      jsonb;
-  v_wh        jsonb := _payload -> 'working_hours';
-  v_weekday   int;
-  v_staff     uuid[] := '{}'::uuid[];
+  v_resource   uuid;
+  v_service    uuid;
+  v_item       jsonb;
+  v_wh         jsonb := _payload -> 'working_hours';
+  v_weekday    int;
+  v_staff      uuid[] := '{}'::uuid[];
 begin
-  if v_user is null then
-    raise exception 'Oturum açılmamış' using errcode = '28000';
-  end if;
-
-  -- Kötüye kullanım freni: bir kullanıcı sınırsız kurum açamaz.
-  if (select count(*) from public.memberships m where m.user_id = v_user) >= 5 then
-    raise exception 'Kurum sayısı sınırına ulaşıldı' using errcode = 'P0001';
-  end if;
-
   -- ---------------------------------------------------------------------------
   -- Kurum ve ayarlar
   -- ---------------------------------------------------------------------------
-  insert into public.tenants (name, slug, family, business_type, timezone)
+  insert into public.tenants (name, slug, family, business_type, timezone, status)
   values (btrim(_name), lower(btrim(_slug)), _family, _business_type,
-          coalesce(nullif(btrim(_timezone), ''), 'Europe/Istanbul'))
+          coalesce(nullif(btrim(_timezone), ''), 'Europe/Istanbul'), _status)
   returning id into v_tenant;
 
   insert into public.tenant_settings (tenant_id, terminology, booking_rules)
@@ -198,6 +194,44 @@ begin
   );
 
   return v_tenant;
+end;
+$$;
+
+revoke execute on function private.build_tenant_from_template(
+  uuid, text, text, public.business_family, text, text, jsonb, public.tenant_status
+) from public, anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Self-serve sarmalayıcı: kurumu açan auth.uid() sahiptir, 5-kurum freni burada.
+-- -----------------------------------------------------------------------------
+create or replace function public.create_tenant_from_template(
+  _name          text,
+  _slug          text,
+  _family        public.business_family,
+  _business_type text,
+  _timezone      text,
+  _payload       jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := (select auth.uid());
+begin
+  if v_user is null then
+    raise exception 'Oturum açılmamış' using errcode = '28000';
+  end if;
+
+  -- Kötüye kullanım freni: bir kullanıcı sınırsız kurum açamaz.
+  if (select count(*) from public.memberships m where m.user_id = v_user) >= 5 then
+    raise exception 'Kurum sayısı sınırına ulaşıldı' using errcode = 'P0001';
+  end if;
+
+  return private.build_tenant_from_template(
+    v_user, _name, _slug, _family, _business_type, _timezone, _payload, 'trial'
+  );
 end;
 $$;
 

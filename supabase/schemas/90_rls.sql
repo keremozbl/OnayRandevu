@@ -61,6 +61,19 @@ create policy tenant_settings_insert on public.tenant_settings
   with check ( private.allows('settings.manage', tenant_id) );
 
 -- -----------------------------------------------------------------------------
+-- tenant_subscriptions — üye kendi aboneliğini OKUR; yazma yalnız platform
+-- `security definer` fonksiyonlarından (sahip rolüyle, RLS baypas).
+-- -----------------------------------------------------------------------------
+alter table public.tenant_subscriptions enable row level security;
+alter table public.tenant_subscriptions force row level security;
+grant select on public.tenant_subscriptions to authenticated;
+
+create policy tenant_subscriptions_read on public.tenant_subscriptions
+  for select to authenticated
+  using ( (select private.is_tenant_member(tenant_id)) );
+-- INSERT/UPDATE/DELETE politikası YOK: değişiklik platform fonksiyonlarından.
+
+-- -----------------------------------------------------------------------------
 -- Global kataloglar — tenant verisi değil, herkes okuyabilir, kimse yazamaz
 -- -----------------------------------------------------------------------------
 alter table public.permissions enable row level security;
@@ -635,3 +648,15 @@ create policy demo_requests_update on public.demo_requests
   for update to authenticated
   using      ( (select private.is_platform_admin()) )
   with check ( (select private.is_platform_admin()) );
+
+-- -----------------------------------------------------------------------------
+-- platform_audit — platform yöneticisinin eylem kaydı. Okunur, yazılmaz:
+-- satırları yalnız platform `security definer` fonksiyonları ekler.
+-- -----------------------------------------------------------------------------
+alter table public.platform_audit enable row level security;
+alter table public.platform_audit force row level security;
+grant select on public.platform_audit to authenticated;
+
+create policy platform_audit_read on public.platform_audit
+  for select to authenticated
+  using ( (select private.is_platform_admin()) );

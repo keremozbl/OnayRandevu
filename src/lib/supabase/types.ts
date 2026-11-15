@@ -1886,6 +1886,55 @@ export type Database = {
         Returns: number
       }
       is_slug_available: { Args: { _slug: string }; Returns: boolean }
+      platform_create_tenant: {
+        Args: {
+          _business_type: string
+          _family: Database["public"]["Enums"]["business_family"]
+          _name: string
+          _owner_user_id: string
+          _payload: Json
+          _slug: string
+          _timezone: string
+        }
+        Returns: string
+      }
+      platform_extend_trial: {
+        Args: { _days: number; _tenant_id: string }
+        Returns: Json
+      }
+      platform_overview: { Args: Record<string, never>; Returns: Json }
+      platform_set_plan: {
+        Args: { _plan: string; _tenant_id: string }
+        Returns: Json
+      }
+      platform_set_status: {
+        Args: {
+          _status: Database["public"]["Enums"]["tenant_status"]
+          _tenant_id: string
+        }
+        Returns: Json
+      }
+      platform_tenant_detail: { Args: { _tenant_id: string }; Returns: Json }
+      platform_tenants: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          name: string
+          slug: string
+          family: Database["public"]["Enums"]["business_family"]
+          business_type: string
+          status: Database["public"]["Enums"]["tenant_status"]
+          plan: string | null
+          trial_ends_at: string | null
+          created_at: string
+          member_count: number
+          resource_count: number
+          customer_count: number
+          appointment_count: number
+          appointments_30d: number
+          last_activity: string | null
+        }[]
+      }
       submit_demo_request: {
         Args: {
           _business_type?: string
