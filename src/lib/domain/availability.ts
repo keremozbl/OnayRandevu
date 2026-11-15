@@ -77,6 +77,13 @@ export type AvailabilityInput = {
   /** Izgara adımı; verilmezse kuraldaki `slot_step_minutes` */
   stepMinutes?: number;
   now?: Date;
+  /**
+   * Açık ise her gün ayrıca `busySlots` döner: çalışma penceresi içinde olup
+   * mevcut bir randevuyla DOLU olan ızgara başlangıçları. Geçmiş ve minimum
+   * ön süre nedeniyle elenen saatler buraya GİRMEZ — onlar "dolu" değil, "geçti".
+   * Public sayfada hastaya dolu saatleri de göstermek için kullanılır.
+   */
+  includeBusy?: boolean;
 };
 
 export type Slot = {
@@ -87,9 +94,17 @@ export type Slot = {
   blockedTo: Date;
 };
 
+/** Dolu bir ızgara başlangıcı — randevu ayrıntısı taşımaz, yalnız zaman. */
+export type BusySlot = {
+  startsAt: Date;
+  endsAt: Date;
+};
+
 export type DayAvailability = {
   date: PlainDate;
   slots: Slot[];
+  /** `includeBusy` verildiyse doldurulur (yoksa undefined). */
+  busySlots?: BusySlot[];
 };
 
 const MINUTE_MS = 60_000;
@@ -151,11 +166,15 @@ export function computeAvailability(input: AvailabilityInput): DayAvailability[]
   const lastOpenDate = rules ? addDays(utcToPlainDate(now, timeZone), rules.max_advance_days) : null;
 
   const busy = mergeIntervals(schedule.busy ?? []);
+  const includeBusy = input.includeBusy ?? false;
 
   return datesBetween(input.from, input.to).map((date) => {
-    if (lastOpenDate !== null && date > lastOpenDate) return { date, slots: [] };
+    if (lastOpenDate !== null && date > lastOpenDate) {
+      return includeBusy ? { date, slots: [], busySlots: [] } : { date, slots: [] };
+    }
 
     const slots: Slot[] = [];
+    const busySlots: BusySlot[] = [];
     for (const window of computeOpenWindows(date, timeZone, schedule)) {
       const windowEnd = window.end.getTime();
       for (let start = window.start.getTime(); start + durationMs <= windowEnd; start += stepMs) {
@@ -165,7 +184,11 @@ export function computeAvailability(input: AvailabilityInput): DayAvailability[]
           start: new Date(start - bufferBeforeMs),
           end: new Date(start + durationMs + bufferAfterMs),
         };
-        if (busy.some((taken) => intervalsOverlap(blocked, taken))) continue;
+        if (busy.some((taken) => intervalsOverlap(blocked, taken))) {
+          // Çalışma saati içinde ama dolu: hastaya göstermek için ayrı tut.
+          if (includeBusy) busySlots.push({ startsAt: new Date(start), endsAt: new Date(start + durationMs) });
+          continue;
+        }
 
         slots.push({
           startsAt: new Date(start),
@@ -175,7 +198,7 @@ export function computeAvailability(input: AvailabilityInput): DayAvailability[]
         });
       }
     }
-    return { date, slots };
+    return includeBusy ? { date, slots, busySlots } : { date, slots };
   });
 }
 
@@ -211,33 +234,42 @@ export type SharedSlot = Slot & { resourceIds: string[] };
 
 export function mergeResourceAvailability(
   perResource: readonly { resourceId: string; days: readonly DayAvailability[] }[],
-): { date: PlainDate; slots: SharedSlot[] }[] {
-  const byDate = new Map<PlainDate, Map<number, SharedSlot>>();
+): { date: PlainDate; slots: SharedSlot[]; busySlots: BusySlot[] }[] {
+  const byDate = new Map<PlainDate, { free: Map<number, SharedSlot>; busy: Map<number, BusySlot> }>();
 
   for (const { resourceId, days } of perResource) {
     for (const day of days) {
-      let slotsOfDay = byDate.get(day.date);
-      if (!slotsOfDay) {
-        slotsOfDay = new Map();
-        byDate.set(day.date, slotsOfDay);
+      let bucket = byDate.get(day.date);
+      if (!bucket) {
+        bucket = { free: new Map(), busy: new Map() };
+        byDate.set(day.date, bucket);
       }
       for (const slot of day.slots) {
         const key = slot.startsAt.getTime();
-        const existing = slotsOfDay.get(key);
+        const existing = bucket.free.get(key);
         if (existing) {
           if (!existing.resourceIds.includes(resourceId)) existing.resourceIds.push(resourceId);
         } else {
-          slotsOfDay.set(key, { ...slot, resourceIds: [resourceId] });
+          bucket.free.set(key, { ...slot, resourceIds: [resourceId] });
         }
+      }
+      for (const b of day.busySlots ?? []) {
+        const key = b.startsAt.getTime();
+        if (!bucket.busy.has(key)) bucket.busy.set(key, b);
       }
     }
   }
 
   return [...byDate.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, slotsOfDay]) => ({
+    .map(([date, bucket]) => ({
       date,
-      slots: [...slotsOfDay.values()].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime()),
+      slots: [...bucket.free.values()].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime()),
+      // Bir kaynakta boş olan saat seçilebilir; yalnız HİÇBİR kaynakta boş
+      // olmayan dolu saatler gösterilir.
+      busySlots: [...bucket.busy.values()]
+        .filter((b) => !bucket.free.has(b.startsAt.getTime()))
+        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime()),
     }));
 }
 

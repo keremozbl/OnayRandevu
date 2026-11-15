@@ -279,3 +279,63 @@ test("en yakın uygun slot hata mesajı için bulunur", () => {
   assert.equal(clock.format(nearestSlot(days, ist(MONDAY, "07:00"))!.startsAt), "09:00");
   assert.equal(nearestSlot([{ date: MONDAY, slots: [] }], ist(MONDAY, "10:00")), null);
 });
+
+test("includeBusy dolu ızgara başlangıçlarını ayrı döndürür", () => {
+  const [day] = computeAvailability({
+    timeZone: IST,
+    from: MONDAY,
+    to: MONDAY,
+    schedule: {
+      workingHours: [{ weekday: 1, startsAt: "09:00", endsAt: "11:00" }],
+      busy: [span(MONDAY, "09:30", "10:00")],
+    },
+    service: { durationMin: 30 },
+    stepMinutes: 30,
+    includeBusy: true,
+  });
+
+  assert.deepEqual(day.slots.map((s) => clock.format(s.startsAt)), ["09:00", "10:00", "10:30"]);
+  assert.deepEqual((day.busySlots ?? []).map((s) => clock.format(s.startsAt)), ["09:30"]);
+});
+
+test("geçmiş/ön-süre nedeniyle elenen saat dolu sayılmaz", () => {
+  const [day] = computeAvailability({
+    timeZone: IST,
+    from: MONDAY,
+    to: MONDAY,
+    schedule: { workingHours: [{ weekday: 1, startsAt: "09:00", endsAt: "11:00" }] },
+    service: { durationMin: 30 },
+    stepMinutes: 30,
+    rules: { ...DEFAULT_BOOKING_RULES, min_lead_minutes: 0, max_advance_days: 365 },
+    now: ist(MONDAY, "09:45"),
+    includeBusy: true,
+  });
+
+  // 09:00 ve 09:30 geçti: dolu DEĞİL, hiçbir listede yok.
+  assert.deepEqual(day.busySlots, []);
+  assert.equal(day.slots.map((s) => clock.format(s.startsAt)).includes("09:00"), false);
+});
+
+test("merge: bir kaynakta boş olan saat dolu gösterilmez", () => {
+  const common = { timeZone: IST, from: MONDAY, to: MONDAY, service: { durationMin: 30 }, stepMinutes: 30, includeBusy: true };
+  const a = computeAvailability({
+    ...common,
+    schedule: {
+      workingHours: [{ weekday: 1, startsAt: "09:00", endsAt: "10:00" }],
+      busy: [span(MONDAY, "09:00", "09:30")],
+    },
+  });
+  const b = computeAvailability({
+    ...common,
+    schedule: { workingHours: [{ weekday: 1, startsAt: "09:00", endsAt: "10:00" }] },
+  });
+
+  const merged = mergeResourceAvailability([
+    { resourceId: "a", days: a },
+    { resourceId: "b", days: b },
+  ]);
+
+  // 09:00 a'da dolu ama b'de boş → seçilebilir, dolu listesinde olmamalı.
+  assert.equal(merged[0].slots.map((s) => clock.format(s.startsAt)).includes("09:00"), true);
+  assert.deepEqual(merged[0].busySlots.map((s) => clock.format(s.startsAt)), []);
+});

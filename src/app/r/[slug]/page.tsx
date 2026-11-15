@@ -446,26 +446,47 @@ export default async function RandevuAlPage({
 
                 <fieldset className="flex flex-col gap-3">
                   <legend className="sr-only">
-                    {formatDayChip(selectedDay.date).day} için uygun saatler
+                    {formatDayChip(selectedDay.date).day} için uygun ve dolu saatler
                   </legend>
 
-                  {groupByDaypart(selectedDay.slots, (slot) =>
-                    Number(formatTime(slot.startsAt, timeZone).slice(0, 2)),
+                  {/* Boş ve dolu saatler tek zaman çizgisinde: hasta günün ne
+                      kadar dolu olduğunu görür, boş olanı seçer. Dolu saatler
+                      kesik çerçeveli ve soluk — seçilemez, yalnız bilgi. */}
+                  {groupByDaypart(
+                    [
+                      ...selectedDay.slots.map((slot) => ({ busy: false as const, slot })),
+                      ...selectedDay.busySlots.map((slot) => ({ busy: true as const, slot })),
+                    ].sort((a, b) => a.slot.startsAt.getTime() - b.slot.startsAt.getTime()),
+                    (cell) => Number(formatTime(cell.slot.startsAt, timeZone).slice(0, 2)),
                   ).map((group) => (
                     <div key={group.label} className="flex flex-col gap-1.5">
                       <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
                         {group.label}
                       </p>
                       <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                        {group.items.map((slot) => {
+                        {group.items.map((cell) => {
+                          const time = formatTime(cell.slot.startsAt, timeZone);
+                          if (cell.busy) {
+                            return (
+                              <span
+                                key={`dolu-${cell.slot.startsAt.toISOString()}`}
+                                data-numeric
+                                aria-label={`${time} dolu`}
+                                title="Bu saat dolu"
+                                className="flex h-11 items-center justify-center rounded border border-dashed border-border bg-surface-2 text-[15px] text-ink-3"
+                              >
+                                {time}
+                              </span>
+                            );
+                          }
                           const selected =
-                            holdValid && held!.startsAt.getTime() === slot.startsAt.getTime();
+                            holdValid && held!.startsAt.getTime() === cell.slot.startsAt.getTime();
                           return (
                             <button
-                              key={slot.startsAt.toISOString()}
+                              key={cell.slot.startsAt.toISOString()}
                               type="submit"
                               name="secim"
-                              value={encodeSlotChoice(slot.startsAt, slot.resourceIds)}
+                              value={encodeSlotChoice(cell.slot.startsAt, cell.slot.resourceIds)}
                               data-numeric
                               aria-current={selected ? "true" : undefined}
                               className={[
@@ -476,13 +497,23 @@ export default async function RandevuAlPage({
                                   : "border-border bg-surface text-ink hover:border-accent hover:bg-accent-soft",
                               ].join(" ")}
                             >
-                              {formatTime(slot.startsAt, timeZone)}
+                              {time}
                             </button>
                           );
                         })}
                       </div>
                     </div>
                   ))}
+
+                  {selectedDay.busySlots.length > 0 && (
+                    <p className="flex items-center gap-2 text-[12px] text-ink-3">
+                      <span
+                        aria-hidden="true"
+                        className="inline-block h-4 w-6 shrink-0 rounded border border-dashed border-border bg-surface-2"
+                      />
+                      Kesik çerçeveli saatler dolu.
+                    </p>
+                  )}
                 </fieldset>
               </form>
             )}

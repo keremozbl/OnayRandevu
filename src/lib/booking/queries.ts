@@ -28,6 +28,7 @@ import {
   parseBranding,
   type Branding,
   type SharedSlot,
+  type BusySlot,
 } from "@/lib/domain";
 import { buildResourceSchedules, toDate, resolveTimeZone } from "@/lib/scheduling/mappers";
 import { createPublicClient } from "@/lib/supabase/public";
@@ -241,7 +242,7 @@ export async function loadBookingPage(slug: string): Promise<BookingPage | null>
  */
 export const getBookingPage = cache(loadBookingPage);
 
-export type PublicDay = { date: PlainDate; slots: SharedSlot[] };
+export type PublicDay = { date: PlainDate; slots: SharedSlot[]; busySlots: BusySlot[] };
 
 /**
  * Seçilen hizmet ve kaynaklar için gün gün uygun saatler.
@@ -313,6 +314,8 @@ export async function loadPublicAvailability({
         },
         rules,
         now,
+        // Hastaya boş saatlerin yanında dolu saatleri de göster.
+        includeBusy: true,
       }),
     })),
   );
