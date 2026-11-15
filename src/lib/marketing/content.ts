@@ -20,6 +20,8 @@
  * yazmak zorunda). Siteye geri eklemeyin.
  */
 
+import { PLAN_CATALOG, type PlanKey, type PlanLimits } from "../plans.ts";
+
 export const PRODUCT = {
   name: "OnayRandevu",
   /** Tek cümlede ne olduğu; meta description ve paylaşım kartı da bunu kullanır */
@@ -209,12 +211,43 @@ export type Plan = {
   limits: { label: string; value: string }[];
 };
 
-export const PLANS: Plan[] = [
+/**
+ * Fiyat kartları — TEK KAYNAK `src/lib/plans.ts`.
+ *
+ * Plan ADI, aylık FİYAT ve limit SAYILARI katalogda (`PLAN_CATALOG`) yaşıyor;
+ * panel/motor da oradan okuyor. Burada yalnızca pazarlamaya özgü metin kalır:
+ * kime uygun (`fit`), madde listesi (`includes`), öne çıkan kart (`highlight`)
+ * ve limit satırlarının ETİKETLERİ. Değerler katalogtan türetilir, böylece
+ * fiyat ya da kota tek yerde değişir; iki kaynak birbirinden kayamaz.
+ * (`content.test.ts` türetmeyi sınıyor.)
+ *
+ * Etiket neden türetilmiyor: zincirde limit "Şube", diğerlerinde
+ * "Uzman / kaynak" — aynı `resources` alanının adı plana göre değişiyor. O yüzden
+ * ETİKET pazarlamaya ait kalır, yalnız DEĞER katalogtan gelir. Fiyatın kendisi
+ * `monthly` sayısı olarak taşınıp kartta `formatMonthly` ile biçimleniyor (U+20BA
+ * ve tabular-nums tuzakları orada).
+ */
+type PlanLimitCopy = {
+  label: string;
+  /** Hangi katalog limitinden türeyeceği. */
+  from: keyof PlanLimits;
+  /** Katalogda `null` (sınırsız) ise yazılacak metin. */
+  unlimited: string;
+};
+
+type PlanCopy = {
+  key: PlanKey;
+  fit: string;
+  highlight?: boolean;
+  includes: string[];
+  limits: PlanLimitCopy[];
+};
+
+/** Kart sırası bu diziden gelir (tek_uzman → ekip → zincir). */
+const PLAN_COPY: PlanCopy[] = [
   {
     key: "tek_uzman",
-    name: "Tek Uzman",
     fit: "Tek kişinin çalıştığı muayenehane, salon ya da ofis.",
-    monthly: 890,
     includes: [
       "Takvim, randevu ve müşteri kartı",
       "Günün programı: ekran, A4 çıktı, Excel",
@@ -222,16 +255,14 @@ export const PLANS: Plan[] = [
       "KVKK rıza kaydı ve denetim kaydı",
     ],
     limits: [
-      { label: "Kullanıcı", value: "2" },
-      { label: "Uzman / kaynak", value: "1" },
-      { label: "Aylık hatırlatma", value: "500" },
+      { label: "Kullanıcı", from: "users", unlimited: "sınırsız" },
+      { label: "Uzman / kaynak", from: "resources", unlimited: "sınırsız" },
+      { label: "Aylık hatırlatma", from: "monthlyReminders", unlimited: "kullanım kadar" },
     ],
   },
   {
     key: "ekip",
-    name: "Ekip",
     fit: "Birden çok uzmanın ve resepsiyonun birlikte çalıştığı salon ya da klinik.",
-    monthly: 1890,
     highlight: true,
     includes: [
       "Tek Uzman paketindeki her şey",
@@ -241,16 +272,14 @@ export const PLANS: Plan[] = [
       "Bekleme listesi",
     ],
     limits: [
-      { label: "Kullanıcı", value: "10" },
-      { label: "Uzman / kaynak", value: "6" },
-      { label: "Aylık hatırlatma", value: "3.000" },
+      { label: "Kullanıcı", from: "users", unlimited: "sınırsız" },
+      { label: "Uzman / kaynak", from: "resources", unlimited: "sınırsız" },
+      { label: "Aylık hatırlatma", from: "monthlyReminders", unlimited: "kullanım kadar" },
     ],
   },
   {
     key: "zincir",
-    name: "Zincir",
     fit: "Birden çok şubesi olan işletmeler.",
-    monthly: null,
     includes: [
       "Ekip paketindeki her şey",
       "Çok şube, şube bazlı yetki ve raporlar",
@@ -258,12 +287,32 @@ export const PLANS: Plan[] = [
       "Öncelikli destek ve kurulum",
     ],
     limits: [
-      { label: "Kullanıcı", value: "sınırsız" },
-      { label: "Şube", value: "sınırsız" },
-      { label: "Aylık hatırlatma", value: "kullanım kadar" },
+      { label: "Kullanıcı", from: "users", unlimited: "sınırsız" },
+      { label: "Şube", from: "resources", unlimited: "sınırsız" },
+      { label: "Aylık hatırlatma", from: "monthlyReminders", unlimited: "kullanım kadar" },
     ],
   },
 ];
+
+const planNf = new Intl.NumberFormat("tr-TR");
+
+function limitValue(copy: PlanLimitCopy, limits: PlanLimits): string {
+  const raw = limits[copy.from];
+  return raw === null ? copy.unlimited : planNf.format(raw);
+}
+
+export const PLANS: Plan[] = PLAN_COPY.map((copy) => {
+  const meta = PLAN_CATALOG[copy.key];
+  return {
+    key: copy.key,
+    name: meta.name,
+    fit: copy.fit,
+    monthly: meta.monthly,
+    highlight: copy.highlight,
+    includes: copy.includes,
+    limits: copy.limits.map((l) => ({ label: l.label, value: limitValue(l, meta.limits) })),
+  };
+});
 
 export const FAQ = [
   {
