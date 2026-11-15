@@ -8,6 +8,12 @@
  *   node scripts/platform-admin.mjs listele
  *   node scripts/platform-admin.mjs ekle <e-posta> [etiket]
  *   node scripts/platform-admin.mjs sil  <e-posta>
+ *   node scripts/platform-admin.mjs kur  <e-posta> [etiket]   (parola PAROLA env'inden)
+ *
+ * `kur`: hesabı yoksa açar (e-posta doğrulanmış doğar — e-posta altyapısı
+ * beklenmez), varsa parolasını günceller, sonra platform yöneticisi yapar.
+ * Parola argümanla değil `PAROLA` ortam değişkeniyle verilir; süreç listesinde
+ * ve kabuk geçmişinde görünmesin.
  */
 import { createClient } from "@supabase/supabase-js";
 
@@ -65,6 +71,40 @@ switch (command) {
       .upsert({ user_id: user.id, label: label ?? null });
     if (error) throw new Error(error.message);
     console.log(`\n${email} platform yöneticisi oldu.\n`);
+    break;
+  }
+
+  case "kur": {
+    if (!email) throw new Error("E-posta gerekli: node scripts/platform-admin.mjs kur <e-posta>");
+    const parola = process.env.PAROLA;
+    if (!parola || parola.length < 8) {
+      throw new Error("PAROLA ortam değişkeni gerekli (en az 8 karakter).");
+    }
+
+    let user = await findUser(email);
+    if (user) {
+      const { error } = await admin.auth.admin.updateUserById(user.id, {
+        password: parola,
+        email_confirm: true,
+      });
+      if (error) throw new Error(error.message);
+      console.log(`\n${email} zaten vardı; parolası güncellendi.`);
+    } else {
+      const { data, error } = await admin.auth.admin.createUser({
+        email: email.trim().toLowerCase(),
+        password: parola,
+        email_confirm: true,
+      });
+      if (error || !data?.user) throw new Error(error?.message ?? "Hesap oluşturulamadı.");
+      user = data.user;
+      console.log(`\n${email} hesabı açıldı (e-posta doğrulanmış).`);
+    }
+
+    const { error: adminErr } = await admin
+      .from("platform_admins")
+      .upsert({ user_id: user.id, label: label ?? null });
+    if (adminErr) throw new Error(adminErr.message);
+    console.log(`${email} platform yöneticisi oldu. Artık /giris → /yonetim.\n`);
     break;
   }
 

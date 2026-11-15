@@ -61,6 +61,24 @@ export async function signIn(
   });
 
   if (error) return { error: translate(error.message) };
+
+  // Platform yöneticisi olup hiç kurum üyeliği olmayan kullanıcı (ör. yalnız
+  // yönetim için açılmış hesap) doğrudan /yonetim'e düşer: /app zaten üyeliksiz
+  // kullanıcıyı /kurulum'a atardı ve panel yerine sihirbaz açmak kafa karıştırır.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    const [{ data: admin }, { count }] = await Promise.all([
+      supabase.from("platform_admins").select("user_id").eq("user_id", user.id).maybeSingle(),
+      supabase
+        .from("memberships")
+        .select("tenant_id", { count: "exact", head: true })
+        .eq("is_active", true),
+    ]);
+    if (admin && (count ?? 0) === 0) redirect("/yonetim");
+  }
+
   redirect("/app");
 }
 
