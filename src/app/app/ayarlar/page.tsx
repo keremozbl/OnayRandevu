@@ -78,6 +78,22 @@ export default async function AyarlarPage({
         </Link>
       </section>
 
+      {permissions.can("settings.manage") && (
+        <section className="flex max-w-2xl flex-col gap-2 border-t border-border pt-4">
+          <h2 className="text-[15px] font-semibold text-ink">WhatsApp Business</h2>
+          <p className="text-[13px] text-ink-2">
+            Hatırlatmaları kurumunuzun kendi WhatsApp numarasından gönderin. Ekip ve Zincir
+            paketlerinde sunulur; bağlantıyı Meta WhatsApp Business hesabınızla kurarsınız.
+          </p>
+          <Link
+            href="/app/ayarlar/whatsapp"
+            className="inline-flex h-8 w-fit items-center rounded border border-border bg-surface px-2.5 text-[13px] font-medium text-ink no-underline transition-colors duration-150 hover:bg-surface-2"
+          >
+            WhatsApp&apos;ı yönet
+          </Link>
+        </section>
+      )}
+
       {canErase && (
         <section className="flex max-w-2xl flex-col gap-2 border-t border-border pt-4">
           <h2 className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-ink">

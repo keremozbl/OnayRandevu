@@ -937,6 +937,8 @@ export type Database = {
           key: string
           kind: Database["public"]["Enums"]["message_kind"]
           name: string
+          provider_template_lang: string
+          provider_template_name: string | null
           subject: string | null
           tenant_id: string
           updated_at: string
@@ -950,6 +952,8 @@ export type Database = {
           key: string
           kind?: Database["public"]["Enums"]["message_kind"]
           name: string
+          provider_template_lang?: string
+          provider_template_name?: string | null
           subject?: string | null
           tenant_id: string
           updated_at?: string
@@ -963,6 +967,8 @@ export type Database = {
           key?: string
           kind?: Database["public"]["Enums"]["message_kind"]
           name?: string
+          provider_template_lang?: string
+          provider_template_name?: string | null
           subject?: string | null
           tenant_id?: string
           updated_at?: string
@@ -1560,6 +1566,102 @@ export type Database = {
           },
         ]
       }
+      tenant_subscriptions: {
+        Row: {
+          expiry_warned_at: string | null
+          plan: string
+          started_at: string
+          tenant_id: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          expiry_warned_at?: string | null
+          plan?: string
+          started_at?: string
+          tenant_id: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          expiry_warned_at?: string | null
+          plan?: string
+          started_at?: string
+          tenant_id?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_whatsapp: {
+        Row: {
+          enabled: boolean
+          phone_number_id: string | null
+          tenant_id: string
+          updated_at: string
+          verified_at: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          phone_number_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          verified_at?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          phone_number_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          verified_at?: string | null
+          waba_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_whatsapp_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_whatsapp_secret: {
+        Row: {
+          access_token: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_whatsapp_secret_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           business_type: string
@@ -1922,6 +2024,18 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: Json
       }
+      platform_expiring_soon: {
+        Args: Record<string, never>
+        Returns: {
+          tenant_id: string
+          name: string
+          slug: string
+          status: Database["public"]["Enums"]["tenant_status"]
+          trial_ends_at: string | null
+          owner_email: string | null
+          owner_phone: string | null
+        }[]
+      }
       platform_extend_trial: {
         Args: { _days: number; _tenant_id: string }
         Returns: Json
@@ -1962,6 +2076,23 @@ export type Database = {
           appointments_30d: number
           last_activity: string | null
         }[]
+      }
+      process_subscription_lifecycle: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      disconnect_whatsapp: {
+        Args: { _tenant: string }
+        Returns: Json
+      }
+      set_whatsapp_integration: {
+        Args: {
+          _access_token: string
+          _phone_number_id: string
+          _tenant: string
+          _waba_id?: string
+        }
+        Returns: Json
       }
       submit_demo_request: {
         Args: {

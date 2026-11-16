@@ -1,3 +1,4 @@
+import { isEmailLive, sendTransactionalEmail, textToHtml } from "@/lib/email/resend";
 import type { Enums } from "@/lib/supabase/types";
 
 /**
@@ -54,13 +55,40 @@ export const logProvider: MessageProvider = {
 };
 
 /**
+ * E-posta sağlayıcısı — Resend tabanlı (`lib/email/resend.ts`).
+ *
+ * `RESEND_API_KEY` yokken gerçekten göndermez; adı `log` döner ki panel
+ * "gerçekten gönderilmedi" demeye devam etsin (log sağlayıcısıyla aynı
+ * sözleşme). Anahtar varken adı `resend`, gönderim gerçek. Bildirim şablonları
+ * düz metin yazıldığı için HTML gövdesi `textToHtml` ile türetilir.
+ */
+export const emailProvider: MessageProvider = {
+  get name() {
+    return isEmailLive() ? "resend" : "log";
+  },
+  async send(input) {
+    const result = await sendTransactionalEmail({
+      to: input.to,
+      subject: input.subject ?? "Bildirim",
+      html: textToHtml(input.body),
+      text: input.body,
+    });
+    if (!result.ok) {
+      throw new Error(result.error ?? "E-posta gönderilemedi");
+    }
+    return { ref: result.ref, cost: null };
+  },
+};
+
+/**
  * Kanal → sağlayıcı. Sözleşme imzalandığında yapılacak tek değişiklik bu
- * eşlemeye bir satır eklemek.
+ * eşlemeye bir satır eklemek. `whatsapp` kuruma özel kimlik bilgisi gerektirir
+ * ve dispatch içinde tenant bazlı çözülür (bkz `dispatch.ts`); burada yine log.
  */
 const PROVIDERS: Record<NotificationChannel, MessageProvider> = {
   sms: logProvider,
   whatsapp: logProvider,
-  email: logProvider,
+  email: emailProvider,
   voice: logProvider,
 };
 

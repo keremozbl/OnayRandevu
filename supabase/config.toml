@@ -21,6 +21,7 @@ schema_paths = [
   "./schemas/70_public_booking.sql",
   "./schemas/80_notifications.sql",
   "./schemas/85_platform.sql",
+  "./schemas/87_integrations.sql",
   "./schemas/90_rls.sql",
   "./schemas/95_cron.sql",
   "./schemas/96_storage.sql",
@@ -43,3 +44,42 @@ enable_signup = true
 
 [auth.email]
 enable_confirmations = true
+
+# ---------------------------------------------------------------------------
+# Özel SMTP — Supabase varsayılan göndericisi DEV-ONLY (saatte ~3-4 mail, spam
+# riski). Gerçek kayıtlar patlamadan önce bir ESP'ye (öneri Resend) bağlanmalı.
+#
+# DORMANT: `enabled = false`. Kerem ESP SMTP bilgisini env'e koyup bunu `true`
+# yapınca aktifleşir. Önce yapılacaklar (Kerem; koddan yapılamaz):
+#   1. ESP hesabı (Resend) + SMTP kullanıcı/parola.
+#   2. onayrandevu.com'a SPF + DKIM + DMARC DNS kayıtları (yoksa spam).
+# Sonra env (Vercel + yerel): SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
+#   SMTP_ADMIN_EMAIL (ör. noreply@onayrandevu.com). Ayrıntı: docs/CANLIYA-GECIS.md.
+# ---------------------------------------------------------------------------
+[auth.email.smtp]
+enabled = false
+host = "env(SMTP_HOST)"
+port = 587
+user = "env(SMTP_USER)"
+pass = "env(SMTP_PASS)"
+admin_email = "env(SMTP_ADMIN_EMAIL)"
+sender_name = "OnayRandevu"
+
+# Türkçe e-posta şablonları (varsayılan gönderici kullanılsa bile geçerli).
+# NOT: content_path, CLI çalışma dizinine (proje kökü) göre çözülür —
+# schema_paths'in aksine config dizinine göre DEĞİL. Bu yüzden `./supabase/...`.
+[auth.email.template.confirmation]
+subject = "OnayRandevu hesabınızı doğrulayın"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "OnayRandevu parola sıfırlama"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "OnayRandevu giriş bağlantınız"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.invite]
+subject = "OnayRandevu'ya davet edildiniz"
+content_path = "./supabase/templates/invite.html"

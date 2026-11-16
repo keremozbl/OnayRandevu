@@ -1,11 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { loadPlatformOverview } from "@/lib/platform/queries";
+import {
+  TENANT_STATUS_LABELS,
+  loadExpiringSoon,
+  loadPlatformOverview,
+  type ExpiringTenant,
+} from "@/lib/platform/queries";
 
 export const metadata: Metadata = { title: "Genel bakış" };
 
 const nf = new Intl.NumberFormat("tr-TR");
+const df = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+
+/** "3 gün kaldı" / "bugün doluyor" / "2 gün önce doldu" / "askıda". */
+function expiryLabel(t: ExpiringTenant): string {
+  if (t.status === "suspended") return "Askıya alındı";
+  if (t.daysLeft == null) return "—";
+  if (t.daysLeft > 1) return `${t.daysLeft} gün kaldı`;
+  if (t.daysLeft === 1) return "yarın doluyor";
+  if (t.daysLeft === 0) return "bugün doluyor";
+  return `${Math.abs(t.daysLeft)} gün önce doldu`;
+}
 
 function Stat({
   label,
@@ -44,7 +60,7 @@ function Stat({
 }
 
 export default async function GenelBakisSayfasi() {
-  const o = await loadPlatformOverview();
+  const [o, expiring] = await Promise.all([loadPlatformOverview(), loadExpiringSoon()]);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4">
@@ -78,6 +94,66 @@ export default async function GenelBakisSayfasi() {
           <Stat label="Müşteri kaydı" value={o.customersTotal} />
           <Stat label="Bildirim (30g)" value={o.notifications30d} />
         </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-[12px] font-medium uppercase tracking-wide text-ink-3">
+          Yaklaşan / dolmuş abonelikler
+        </h2>
+        {expiring.length === 0 ? (
+          <p className="rounded border border-border bg-surface px-3.5 py-3 text-[13px] text-ink-3">
+            Önümüzdeki hafta dolacak deneme ya da askıdaki kurum yok.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {expiring.map((t) => (
+              <li
+                key={t.tenantId}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded border border-border bg-surface px-3.5 py-2.5"
+              >
+                <Link
+                  href={`/yonetim/kurumlar/${t.tenantId}`}
+                  className="min-w-0 truncate text-[14px] font-medium text-ink no-underline hover:underline"
+                >
+                  {t.name}
+                </Link>
+                <span className={`text-[12px] font-medium ${TENANT_STATUS_LABELS[t.status].tone}`}>
+                  {TENANT_STATUS_LABELS[t.status].label}
+                </span>
+                <span
+                  className={`text-[12px] ${
+                    t.status === "suspended" || (t.daysLeft != null && t.daysLeft <= 0)
+                      ? "text-st-cancelled"
+                      : "text-st-pending"
+                  }`}
+                >
+                  {expiryLabel(t)}
+                  {t.trialEndsAt && t.status === "trial" ? ` · ${df.format(t.trialEndsAt)}` : ""}
+                </span>
+                <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px]">
+                  {t.ownerPhone ? (
+                    <a
+                      href={`tel:${t.ownerPhone}`}
+                      className="font-medium text-accent no-underline hover:underline"
+                    >
+                      {t.ownerPhone}
+                    </a>
+                  ) : (
+                    <span className="text-ink-3">telefon yok</span>
+                  )}
+                  {t.ownerEmail && (
+                    <a
+                      href={`mailto:${t.ownerEmail}`}
+                      className="min-w-0 truncate text-ink-2 no-underline hover:underline"
+                    >
+                      {t.ownerEmail}
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="flex flex-col gap-2">

@@ -291,7 +291,47 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "tenant.create": "Kurum oluşturuldu",
   "impersonate.start": "Destek girişi başladı",
   "impersonate.end": "Destek girişi bitti",
+  "subscription.warn": "Deneme bitişi uyarısı",
+  "subscription.suspend": "Abonelik askıya alındı",
 };
+
+// ---------------------------------------------------------------------------
+// Yaklaşan/dolmuş abonelikler — platform sahibinin arama listesi.
+// `platform_expiring_soon` security definer fonksiyonundan; sahip e-posta/
+// telefonuyla (Kerem arayıp ikaz edebilsin diye).
+// ---------------------------------------------------------------------------
+
+export type ExpiringTenant = {
+  tenantId: string;
+  name: string;
+  slug: string;
+  status: TenantStatus;
+  trialEndsAt: Date | null;
+  ownerEmail: string | null;
+  ownerPhone: string | null;
+  /** Kalan gün; negatif = süresi geçmiş, null = deneme bitişi yok (askıda). */
+  daysLeft: number | null;
+};
+
+export async function loadExpiringSoon(): Promise<ExpiringTenant[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("platform_expiring_soon");
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const end = row.trial_ends_at ? new Date(row.trial_ends_at) : null;
+    return {
+      tenantId: row.tenant_id,
+      name: row.name,
+      slug: row.slug,
+      status: row.status,
+      trialEndsAt: end,
+      ownerEmail: row.owner_email,
+      ownerPhone: row.owner_phone,
+      daysLeft: end ? Math.ceil((end.getTime() - Date.now()) / 86_400_000) : null,
+    };
+  });
+}
 
 export async function loadPlatformTenantDetail(
   tenantId: string,

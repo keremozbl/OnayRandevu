@@ -74,6 +74,30 @@ create policy tenant_subscriptions_read on public.tenant_subscriptions
 -- INSERT/UPDATE/DELETE politikası YOK: değişiklik platform fonksiyonlarından.
 
 -- -----------------------------------------------------------------------------
+-- tenant_whatsapp — yapılandırma (sır değil). Üye bağlantı durumunu OKUR;
+-- yazma yalnız `set_whatsapp_integration` / `disconnect_whatsapp` definer
+-- fonksiyonlarından (plan + settings.manage kapılı, 87_integrations).
+-- -----------------------------------------------------------------------------
+alter table public.tenant_whatsapp enable row level security;
+alter table public.tenant_whatsapp force row level security;
+grant select on public.tenant_whatsapp to authenticated;
+
+create policy tenant_whatsapp_read on public.tenant_whatsapp
+  for select to authenticated
+  using ( (select private.is_tenant_member(tenant_id)) );
+-- INSERT/UPDATE/DELETE politikası YOK: yazma definer fonksiyonlardan.
+
+-- -----------------------------------------------------------------------------
+-- tenant_whatsapp_secret — access_token (SIR). authenticated'a HİÇBİR yetki:
+-- ne grant ne politika. PostgREST (anon/authenticated) erişemez. Yalnız
+-- `security definer` fonksiyonlar (sahibi postgres, BYPASSRLS) ve worker'ın
+-- servis rolü (BYPASSRLS) okur/yazar. RLS açık+force: defansif katman.
+-- -----------------------------------------------------------------------------
+alter table public.tenant_whatsapp_secret enable row level security;
+alter table public.tenant_whatsapp_secret force row level security;
+-- grant YOK, policy YOK — kasıtlı.
+
+-- -----------------------------------------------------------------------------
 -- Global kataloglar — tenant verisi değil, herkes okuyabilir, kimse yazamaz
 -- -----------------------------------------------------------------------------
 alter table public.permissions enable row level security;

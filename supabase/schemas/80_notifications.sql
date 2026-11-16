@@ -61,6 +61,12 @@ create table public.message_templates (
   kind       public.message_kind not null default 'service',
   subject    text,                       -- yalnız e-posta
   body       text not null check (length(btrim(body)) between 2 and 1600),
+  -- WhatsApp kanalı için: işletme-başlatımlı mesaj 24s oturum dışında yalnız
+  -- Meta'ca ONAYLANMIŞ şablonla gider; serbest metinle değil. Bu alanlar o
+  -- onaylı şablonun adı ve dilidir (kurumun kendi WABA'sında onaylanır). Boşsa
+  -- whatsapp satırı gönderilmez (skipped). Diğer kanallarda kullanılmaz.
+  provider_template_name text,
+  provider_template_lang text not null default 'tr',
   is_active  boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

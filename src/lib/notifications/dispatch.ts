@@ -1,3 +1,9 @@
+import {
+  loadWhatsAppForSend,
+  sendWhatsAppTemplate,
+  toWhatsAppNumber,
+  type WhatsAppForSend,
+} from "@/lib/integrations/whatsapp";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -58,10 +64,21 @@ export async function dispatchNotifications({
   const templateIds = [...new Set(rows.map((row) => row.template_id).filter(Boolean))] as string[];
   const { data: templates } = await supabase
     .from("message_templates")
-    .select("id, body, subject, is_active")
+    .select("id, body, subject, is_active, provider_template_name, provider_template_lang")
     .in("id", templateIds);
 
   const byId = new Map((templates ?? []).map((template) => [template.id, template]));
+
+  // WhatsApp kimlik bilgisi kuruma özel; tenant başına bir kez yükle (token
+  // dahil, servis rolüyle). Kuyrukta birden çok kurumun satırı olabilir.
+  const whatsappByTenant = new Map<string, WhatsAppForSend>();
+  async function whatsappFor(tenantId: string): Promise<WhatsAppForSend> {
+    const cached = whatsappByTenant.get(tenantId);
+    if (cached) return cached;
+    const loaded = await loadWhatsAppForSend(supabase, tenantId);
+    whatsappByTenant.set(tenantId, loaded);
+    return loaded;
+  }
 
   for (const row of rows) {
     const template = row.template_id ? byId.get(row.template_id) : undefined;
@@ -94,15 +111,67 @@ export async function dispatchNotifications({
       continue;
     }
 
-    const provider = providerFor(row.channel);
+    // Gönderim işlevi kanala göre seçilir. WhatsApp kuruma özel kimlik bilgisi
+    // ve ONAYLI şablon ister; eksikse okunur sebeple atlanır (gitmiş gibi
+    // görünmesin). Diğer kanallar statik sağlayıcıdan (providerFor) geçer.
+    let providerName: string;
+    let sendFn: () => Promise<{ ref: string | null; cost: number | null }>;
+
+    if (row.channel === "whatsapp") {
+      const wa = await whatsappFor(row.tenant_id);
+      const number = toWhatsAppNumber(row.to_address);
+      const skipReason = !wa.planOk
+        ? "WhatsApp planı yok (Ekip paketi gerekir)"
+        : !wa.enabled || !wa.creds
+          ? "WhatsApp bağlı değil"
+          : !template.provider_template_name
+            ? "WhatsApp şablonu onaylı değil (şablon adı girilmemiş)"
+            : !number
+              ? "Geçerli WhatsApp numarası yok"
+              : null;
+
+      if (skipReason || !wa.creds || !number || !template.provider_template_name) {
+        await supabase
+          .from("notifications")
+          .update({
+            status: "skipped",
+            rendered_body: rendered.text,
+            last_error: skipReason ?? "WhatsApp gönderilemedi",
+          })
+          .eq("id", row.id);
+        report.skipped += 1;
+        continue;
+      }
+
+      const creds = wa.creds;
+      const templateName = template.provider_template_name;
+      const lang = template.provider_template_lang ?? "tr";
+      providerName = "whatsapp_cloud";
+      sendFn = async () => {
+        const r = await sendWhatsAppTemplate(creds, {
+          to: number,
+          templateName,
+          lang,
+          bodyParams: [rendered.text],
+        });
+        return { ref: r.ref, cost: null };
+      };
+    } else {
+      const provider = providerFor(row.channel);
+      providerName = provider.name;
+      sendFn = async () => {
+        const r = await provider.send({
+          channel: row.channel,
+          to: row.to_address as string,
+          subject,
+          body: rendered.text,
+        });
+        return { ref: r.ref, cost: r.cost };
+      };
+    }
 
     try {
-      const result = await provider.send({
-        channel: row.channel,
-        to: row.to_address,
-        subject,
-        body: rendered.text,
-      });
+      const result = await sendFn();
 
       await supabase
         .from("notifications")
@@ -111,7 +180,7 @@ export async function dispatchNotifications({
           sent_at: new Date().toISOString(),
           rendered_body: rendered.text,
           rendered_subject: subject,
-          provider: provider.name,
+          provider: providerName,
           provider_ref: result.ref,
           cost: result.cost,
           last_error: null,
@@ -131,7 +200,7 @@ export async function dispatchNotifications({
             : row.scheduled_at,
           rendered_body: rendered.text,
           rendered_subject: subject,
-          provider: provider.name,
+          provider: providerName,
           last_error: message.slice(0, 500),
         })
         .eq("id", row.id);

@@ -5,6 +5,10 @@
     {
       "path": "/api/bildirim/gonder",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/abonelik/yasam-dongusu",
+      "schedule": "0 5 * * *"
     }
   ]
 }

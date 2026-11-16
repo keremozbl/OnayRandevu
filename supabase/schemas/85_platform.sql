@@ -502,9 +502,11 @@ begin
     return jsonb_build_object('ok', false, 'reason', 'invalid_days');
   end if;
 
+  -- Deneme uzatılınca uyarı işareti sıfırlanır: yeni dönem = yeni uyarı hakkı.
   update public.tenant_subscriptions
      set trial_ends_at = greatest(coalesce(trial_ends_at, now()), now())
-                         + make_interval(days => _days)
+                         + make_interval(days => _days),
+         expiry_warned_at = null
    where tenant_id = _tenant_id
    returning trial_ends_at into v_new;
 
@@ -675,3 +677,161 @@ revoke execute on function public.platform_impersonate(uuid, int)  from public, 
 revoke execute on function public.platform_end_impersonation(uuid) from public, anon;
 grant execute on function public.platform_impersonate(uuid, int)   to authenticated;
 grant execute on function public.platform_end_impersonation(uuid)  to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Kurum sahibi — abonelik uyarılarının gideceği kişi (e-posta/telefon).
+--
+-- Bir kurumun 'owner' rolündeki gerçek (impersonation olmayan) ilk üyesi.
+-- Yalnız `security definer` çağıranlar kullanır (yaşam döngüsü + yaklaşan liste);
+-- bu yüzden ayrıca EXECUTE verilmez. Hasta/müşteri değil kurum sahibinin
+-- iletişim bilgisi — platform sahibinin (Kerem) arayabilmesi için.
+-- -----------------------------------------------------------------------------
+create or replace function private.tenant_owner(_tenant uuid)
+returns table (email text, full_name text, phone text)
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select u.email::text,
+         coalesce(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'name'),
+         u.raw_user_meta_data ->> 'phone'
+  from public.memberships m
+  join public.roles r on r.id = m.role_id and r.key = 'owner'
+  join auth.users u on u.id = m.user_id
+  where m.tenant_id = _tenant and m.is_active and not m.is_impersonation
+  order by m.created_at
+  limit 1;
+$$;
+
+revoke execute on function private.tenant_owner(uuid) from public, anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Abonelik yaşam döngüsü — uyar → (sessiz 1 gün ek süre) → arşivle
+--
+-- Günlük çalışır (uygulama tarafı /api/abonelik/yasam-dongusu, CRON_SECRET
+-- korumalı). İki iş yapar ve YALNIZ değiştirdiklerini jsonb olarak döndürür ki
+-- çağıran yeni uyarılan kurumların sahiplerine e-posta atabilsin:
+--
+--   1. UYAR: denemesi 7 gün içinde dolacak, henüz uyarılmamış trial kurumları
+--      işaretle (`expiry_warned_at`), denetime 'subscription.warn' yaz. Panel
+--      şeridi ve /yönetim listesi bu durumu canlı okur; e-postayı çağıran atar.
+--   2. ARŞİVLE: `trial_ends_at + 1 gün` (SESSİZ ek süre, kullanıcıya söylenmez)
+--      de geçmiş trial kurumları `suspended` yap, denetime 'subscription.suspend'.
+--      Veri SİLİNMEZ — suspended = arşiv; platform durumu geri alınca kurum döner.
+--
+-- Servis rolü çağırır (sistem işi, kullanıcı değil); is_platform_admin kapısı
+-- YOK ama EXECUTE yalnız service_role'da (claim_notifications ile aynı desen).
+-- Idempotent: ikinci çağrı değiştirecek satır bulamaz, boş diziler döner.
+-- -----------------------------------------------------------------------------
+create or replace function public.process_subscription_lifecycle()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_warned    jsonb;
+  v_suspended jsonb;
+begin
+  with to_warn as (
+    update public.tenant_subscriptions s
+       set expiry_warned_at = now()
+      from public.tenants t
+     where t.id = s.tenant_id
+       and t.status = 'trial'
+       and s.trial_ends_at is not null
+       and s.trial_ends_at > now()
+       and s.trial_ends_at <= now() + interval '7 days'
+       and s.expiry_warned_at is null
+    returning s.tenant_id, t.name, t.slug, s.trial_ends_at
+  ), warn_audit as (
+    insert into public.platform_audit (actor_id, action, tenant_id, detail)
+    select null, 'subscription.warn', w.tenant_id,
+           jsonb_build_object('trial_ends_at', w.trial_ends_at)
+    from to_warn w
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'tenant_id',     w.tenant_id,
+           'name',          w.name,
+           'slug',          w.slug,
+           'trial_ends_at', w.trial_ends_at,
+           'owner_email',   o.email,
+           'owner_name',    o.full_name
+         )), '[]'::jsonb)
+    into v_warned
+  from to_warn w
+  left join lateral private.tenant_owner(w.tenant_id) o on true;
+
+  with to_suspend as (
+    update public.tenants t
+       set status = 'suspended'
+      from public.tenant_subscriptions s
+     where s.tenant_id = t.id
+       and t.status = 'trial'
+       and s.trial_ends_at is not null
+       and now() > s.trial_ends_at + interval '1 day'
+    returning t.id as tenant_id, t.name, t.slug
+  ), suspend_audit as (
+    insert into public.platform_audit (actor_id, action, tenant_id, detail)
+    select null, 'subscription.suspend', x.tenant_id, '{}'::jsonb
+    from to_suspend x
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'tenant_id', x.tenant_id,
+           'name',      x.name,
+           'slug',      x.slug
+         )), '[]'::jsonb)
+    into v_suspended
+  from to_suspend x;
+
+  return jsonb_build_object('warned', v_warned, 'suspended', v_suspended);
+end;
+$$;
+
+revoke execute on function public.process_subscription_lifecycle() from public, anon, authenticated;
+grant execute on function public.process_subscription_lifecycle() to service_role;
+
+-- -----------------------------------------------------------------------------
+-- Yaklaşan/dolmuş abonelikler — platform sahibinin arama listesi.
+--
+-- Denemesi 7 gün içinde dolacak (ek gün dahil, geçmiş tarihli de) trial
+-- kurumları + askıdaki kurumları, sahibin e-posta/telefonuyla döndürür. Kerem
+-- bu listeden kurumları telefonla arayıp ikaz edebilsin diye. is_platform_admin
+-- kapılı, diğer platform_* okuyucularıyla aynı sözleşme.
+-- -----------------------------------------------------------------------------
+create or replace function public.platform_expiring_soon()
+returns table (
+  tenant_id     uuid,
+  name          text,
+  slug          text,
+  status        public.tenant_status,
+  trial_ends_at timestamptz,
+  owner_email   text,
+  owner_phone   text
+)
+language plpgsql
+security definer
+stable
+set search_path = ''
+as $$
+begin
+  if not private.is_platform_admin() then
+    raise exception 'not authorized' using errcode = '42501';
+  end if;
+
+  return query
+  select t.id, t.name, t.slug, t.status, s.trial_ends_at, o.email, o.phone
+  from public.tenants t
+  join public.tenant_subscriptions s on s.tenant_id = t.id
+  left join lateral private.tenant_owner(t.id) o on true
+  where (t.status = 'trial'
+         and s.trial_ends_at is not null
+         and s.trial_ends_at <= now() + interval '7 days')
+     or t.status = 'suspended'
+  order by (t.status = 'trial') desc, s.trial_ends_at asc nulls last;
+end;
+$$;
+
+revoke execute on function public.platform_expiring_soon() from public, anon;
+grant execute on function public.platform_expiring_soon() to authenticated;

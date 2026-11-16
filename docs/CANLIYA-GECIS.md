@@ -121,6 +121,31 @@ Resend/Postmark bağlanacak, SPF + DKIM + DMARC kayıtları yazılacak. E-posta
 şablonları da Türkçeleştirilecek — şu an Supabase'in İngilizce varsayılanları
 gidiyor.
 
+**Durum (16 Kas 2026): kod ve şablonlar HAZIR, dormant.** Yapılanlar:
+
+- `src/lib/email/resend.ts` — Resend HTTP API (`fetch`, bağımlılıksız).
+  `RESEND_API_KEY` yokken gerçekten göndermez, loglar (`via: "log"`); anahtar
+  gelince gönderir. `src/lib/notifications/providers.ts` `email` kanalı buna
+  bağlandı (anahtarsızken adı yine `log`, panel "gerçekten gönderilmedi" der).
+- `supabase/config.toml` → `[auth.email.smtp]` (`enabled = false`, env-sürümlü)
+  + Türkçe `[auth.email.template.*]` → `supabase/templates/*.html`
+  (confirmation, recovery, magic_link, invite).
+
+**Kerem'in yapacağı (koddan yapılamaz):** (1) Resend hesabı + SMTP kullanıcı/
+parola; (2) `onayrandevu.com`'a SPF + DKIM + DMARC DNS kayıtları.
+
+**Sonra env (Vercel + yerel `.env`):**
+
+| Değişken | Örnek | Ne için |
+|---|---|---|
+| `RESEND_API_KEY` | `re_...` | `providers.ts` e-posta kanalı + transactional (deneme-bitiyor uyarısı) |
+| `EMAIL_FROM` | `OnayRandevu <noreply@onayrandevu.com>` | gönderici başlığı |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | ESP'den | Supabase Auth custom SMTP |
+| `SMTP_ADMIN_EMAIL` | `noreply@onayrandevu.com` | Auth gönderici adresi |
+
+Son olarak `config.toml`'da `[auth.email.smtp] enabled = true` yapılıp bulut
+projesine uygulanır (aşağıda B4 — bulut kendi ayarını kullanır).
+
 ### B4. Auth ayarları canlı projede yapılandırılacak
 
 `supabase/config.toml` **yalnızca yerel geliştirmeyi** etkiler; bulut projesi
@@ -189,9 +214,20 @@ Hatırlatma bu ürünün asıl satış argümanı; pilot kurum bunsuz canlıya
 
 | Kanal | Aday | Not |
 |---|---|---|
-| SMS | NetGSM, İletimerkezi, Verimor | Türkçe karakter mesajı UCS-2'ye düşürüyor: 70 karakter/parça, iki katı fiyat. Şablon ekranı parça sayısını gösteriyor |
-| WhatsApp | WhatsApp Cloud API, 360dialog | Şablon onayı Meta tarafında günler sürüyor, erken başlatılmalı |
-| E-posta | Resend | B3 ile aynı iş: SPF/DKIM/DMARC |
+| SMS | NetGSM, İletimerkezi, Verimor | Türkçe karakter mesajı UCS-2'ye düşürüyor: 70 karakter/parça, iki katı fiyat. Şablon ekranı parça sayısını gösteriyor. HÂLÂ AÇIK İŞ |
+| WhatsApp | WhatsApp Cloud API | ✅ ENTEGRASYON YAPILDI (16 Kas 2026): kuruma özel bağlantı, Ekip+ planda, Ayarlar → WhatsApp. Aşağıya bak |
+| E-posta | Resend | ✅ KOD HAZIR (B3): `providers.ts` email kanalı Resend'e bağlı, dormant |
+
+**WhatsApp Business (16 Kas 2026):** Meta Cloud API entegrasyonu kuruldu.
+Kurum kendi kimlik bilgisini (phone number ID + access token + WABA ID) **Ayarlar
+→ WhatsApp**'tan bağlar; plan geçidi DB'de (`set_whatsapp_integration`, yalnız
+Ekip/Zincir), token ayrı `tenant_whatsapp_secret` tablosunda (authenticated'a
+yetki yok). Worker (`dispatch.ts`) gönderimde kuruma özel kimliği servis rolüyle
+okur. **İki gerçek kısıt kaldı (tenant tarafı, bizim değil):** (1) hatırlatma
+WhatsApp'ta yalnız Meta'ca ONAYLANMIŞ şablonla gider — her `message_templates`
+satırına `provider_template_name` girilmeli, yoksa `skipped`; şablon onayı Meta'da
+günler sürer. (2) Gövde değişkenleri şu an tek parametre {{1}} olarak gönderiliyor
+(rendered metin); çok-değişkenli onaylı şablon eşleme incelmesi açık iş.
 
 **İYS üyeliği** ticari ileti göndermenin ön şartı; kayıt olmadan kampanya
 mesajı gönderilemez (hatırlatma gönderilebilir, o hizmet bilgilendirmesi).
@@ -204,6 +240,9 @@ değiştirildi, sebebi aşağıda 3. maddede. İki şart var:
 
 1. **CRON_SECRET** Vercel'in Environment Variables ekranına yazılacak. Yoksa
    uç nokta 503 döner ve kuyruk hiç boşalmaz — bilinçli: korumasız çalışmaz.
+   Aynı sır `/api/abonelik/yasam-dongusu`'nu da korur (16 Kas 2026 eklendi;
+   günlük 05:00 UTC): denemesi dolan kurumları uyarır/arşivler. Abonelik yaşam
+   döngüsü ayrıntısı için ana özet notuna bakın.
 2. **NEXT_PUBLIC_SITE_URL** üretim alan adına ayarlanacak. Hatırlatma
    mesajındaki randevu bağlantısı bu kökle kuruluyor; boş kalırsa hastaya
    `/r/klinik/randevu/…` diye tıklanamaz bir yol gider.

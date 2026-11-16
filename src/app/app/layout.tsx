@@ -4,6 +4,7 @@ import { BrandName } from "@/components/brand-name";
 import { LogoMark } from "@/components/logo-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { requireTenant } from "@/lib/auth/session";
+import { SITE_CONTACT } from "@/lib/legal/site-texts";
 import { DEMO_TENANT_SLUG, isDemoUser } from "@/lib/demo/config";
 import { endImpersonationAction } from "@/lib/platform/actions";
 import { readRail } from "@/lib/panel/rail";
@@ -46,6 +47,21 @@ export default async function AppLayout({
 
   const { customer_plural: customers, customer_singular: customer, service_plural: services } =
     active.terms;
+
+  // Deneme bitiyor şeridi: yalnız sahip/yöneticiye, deneme 7 gün içinde (ya da
+  // sessiz ek gün içinde) dolacaksa. Faturalama sahibin işi; personeli meşgul
+  // etmez. Gün sayısı negatif olmaz — 0 "bugün/doldu" demek.
+  const sub = active.subscription;
+  const trialEndsAt = sub?.trial_ends_at ? new Date(sub.trial_ends_at) : null;
+  const canSeeBilling = active.role_key === "owner" || active.role_key === "admin";
+  const trialMsLeft = trialEndsAt ? trialEndsAt.getTime() - Date.now() : null;
+  const showTrialWarning =
+    canSeeBilling &&
+    active.tenant.status === "trial" &&
+    trialMsLeft != null &&
+    trialMsLeft <= 7 * 86_400_000;
+  const trialDaysLeft =
+    trialMsLeft != null ? Math.max(0, Math.ceil(trialMsLeft / 86_400_000)) : 0;
 
   return (
     <div className="flex h-dvh flex-col print:block print:h-auto">
@@ -135,6 +151,28 @@ export default async function AppLayout({
             <Link href="/#iletisim" className="underline underline-offset-2">
               Kendi kurumunuz için demo isteyin
             </Link>
+          </p>
+        )}
+
+        {/* Deneme bitiyor: sahip/yöneticiye hatırlatma. Yenilenmezse kurum
+            askıya alınır (veriler arşivde kalır). Self-servis yükseltme yok,
+            o yüzden eylem iletişim. */}
+        {showTrialWarning && (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-st-pending bg-st-pending-soft px-4 py-1.5 text-[13px] text-st-pending">
+            <strong className="font-medium">
+              {trialDaysLeft > 0
+                ? `Deneme süreniz ${trialDaysLeft} gün sonra doluyor.`
+                : "Deneme süreniz doldu."}
+            </strong>
+            <span className="min-w-0">
+              Hizmeti kesintisiz sürdürmek için aboneliğinizi yenileyin.
+            </span>
+            <a
+              href={`mailto:${SITE_CONTACT.email}`}
+              className="underline underline-offset-2"
+            >
+              İletişime geçin
+            </a>
           </p>
         )}
 

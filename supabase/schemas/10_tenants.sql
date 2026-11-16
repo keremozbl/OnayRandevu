@@ -62,6 +62,10 @@ create table public.tenant_subscriptions (
   plan          text not null default 'tek_uzman'
                   check (plan in ('tek_uzman', 'ekip', 'zincir')),
   trial_ends_at timestamptz,
+  -- Deneme bitişine bir hafta kala uyarı BİR KEZ verilsin diye işaret.
+  -- Dolu = uyarı verildi (denetim + e-posta); yaşam döngüsü işi tekrar etmez.
+  -- Deneme uzatılınca/plan aktif olunca sıfırlanır (yeni dönem = yeni uyarı).
+  expiry_warned_at timestamptz,
   started_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
